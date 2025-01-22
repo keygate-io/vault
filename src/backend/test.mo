@@ -146,6 +146,49 @@ actor {
         Debug.print("Owner management tests completed!");
     };
 
+    // Test threshold configuration
+    public func testThresholdConfiguration() : async () {
+        Debug.print("Testing threshold configuration...");
+        
+        // Test changing threshold to a valid value
+        let validThreshold = 2;
+        let result1 = await mainCanister.changeThreshold(validThreshold);
+        switch(result1) {
+            case (#ok()) {
+                Debug.print("✓ Threshold changed successfully to " # debug_show(validThreshold));
+            };
+            case (#err(msg)) {
+                Debug.print("✗ Changing threshold failed: " # msg);
+            };
+        };
+
+        // Test changing threshold to 0 (should fail)
+        let result2 = await mainCanister.changeThreshold(0);
+        switch(result2) {
+            case (#ok()) {
+                Debug.print("✗ Setting threshold to 0 unexpectedly succeeded");
+            };
+            case (#err(msg)) {
+                Debug.print("✓ Setting threshold to 0 correctly failed: " # msg);
+            };
+        };
+
+        // Test changing threshold to a number greater than total owners (should fail)
+        let owners = await mainCanister.getOwners();
+        let invalidThreshold = owners.size() + 1;
+        let result3 = await mainCanister.changeThreshold(invalidThreshold);
+        switch(result3) {
+            case (#ok()) {
+                Debug.print("✗ Setting threshold higher than owner count unexpectedly succeeded");
+            };
+            case (#err(msg)) {
+                Debug.print("✓ Setting threshold higher than owner count correctly failed: " # msg);
+            };
+        };
+
+        Debug.print("Threshold configuration tests completed!");
+    };
+
     // Run all tests
     public func runAllTests() : async () {
         Debug.print("Running all tests...");
@@ -153,6 +196,7 @@ actor {
         await testUnimplementedFunctions();
         await testQueries();
         await testOwnerManagement();
+        await testThresholdConfiguration();
         Debug.print("All tests completed!");
     };
 } 

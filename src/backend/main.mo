@@ -135,7 +135,24 @@ actor {
 
     // Threshold Management
     public shared({ caller }) func changeThreshold(threshold_value: Nat) : async Result.Result<(), Text> {
-        #err("Not implemented")
+        // Validate caller is an owner
+        if (not isOwnerPrincipal(caller)) {
+            return #err("Only owners can change threshold");
+        };
+
+        // Validate new threshold value
+        if (threshold_value == 0) {
+            return #err("Threshold cannot be zero");
+        };
+
+        if (threshold_value > owners.size()) {
+            return #err("Threshold cannot be greater than number of owners");
+        };
+
+        // Update threshold
+        threshold := threshold_value;
+
+        #ok()
     };
 
     // Security & Modules
