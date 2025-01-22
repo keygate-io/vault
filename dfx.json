@@ -1,7 +1,11 @@
 {
   "canisters": {
-    "kg_multisig_backend": {
-      "main": "src/kg_multisig_backend/main.mo",
+    "backend": {
+      "main": "src/backend/main.mo",
+      "type": "motoko"
+    },
+    "backend_test": {
+      "main": "src/backend/test.mo",
       "type": "motoko"
     }
   },
