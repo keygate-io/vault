@@ -12,21 +12,25 @@ import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import { Avatar, AvatarGroup } from "@/components/ui/avatar";
 import { ColorModeButton } from "@/components/ui/color-mode";
 import ApprovalGrid from "@/components/ui/approval-grid";
+import AddressDisplay from "@/components/ui/address-display";
+import BalanceDisplay from "@/components/ui/balance-display";
 
 function MultisigWallet() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const mockTransactions = [
     {
       id: 1,
-      recipient: "0x123...abc",
-      amount: "1.5 ETH",
+      recipient:
+        "6a6f62866a144e971cd7e036d8234afe96e537c7624fcd8e5100ef08578ea003",
+      amount: "1.5 ICP",
       approvals: 2,
       required: 3,
     },
     {
       id: 2,
-      recipient: "0x456...def",
-      amount: "0.8 ETH",
+      recipient:
+        "6a6f62866a144e971cd7e036d8234afe96e537c7624fcd8e5100ef08578ea003",
+      amount: "0.8 ICP",
       approvals: 1,
       required: 3,
     },
@@ -43,14 +47,14 @@ function MultisigWallet() {
     {
       id: 2,
       name: "Bob",
-      address: "0x6f5e4d...3c2b1a",
+      address: "0x456...def",
       avatarUrl: "https://bit.ly/sage-adebayo",
       isCurrentUser: false,
     },
     {
       id: 3,
       name: "Charlie",
-      address: "0xa1b2c3...d4e5f6",
+      address: "0x789...ghi",
       avatarUrl: null,
       isCurrentUser: false,
     },
@@ -70,6 +74,9 @@ function MultisigWallet() {
           </Box>
           <ColorModeButton />
         </HStack>
+        <Box mt={4}>
+          <BalanceDisplay balance="125.45" symbol="ICP" />
+        </Box>
         <VStack spacing={3} align="stretch" mt={4}>
           <Text fontSize="lg" fontWeight="bold">
             Signers
@@ -139,7 +146,12 @@ function MultisigWallet() {
             <Box key={tx.id} p={4} borderWidth={1} borderRadius="md">
               <HStack justify="space-between" align="center">
                 <VStack align="start" spacing={1}>
-                  <Text fontWeight="medium">{tx.recipient}</Text>
+                  <AddressDisplay
+                    address={tx.recipient}
+                    type={
+                      tx.recipient.startsWith("rrkah") ? "principal" : "account"
+                    }
+                  />
                   <Text fontSize="sm" color="gray.500">
                     {tx.amount}
                   </Text>
