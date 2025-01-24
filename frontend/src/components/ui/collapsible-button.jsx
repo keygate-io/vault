@@ -1,35 +1,54 @@
 import { Button, Box, Collapsible } from "@chakra-ui/react";
-import { useDisclosure } from "@chakra-ui/react";
+import { useState } from "react";
 
 const CollapsibleButton = ({
-  buttonText,
-  icon,
+  content,
   children,
   variant = "outline",
   colorScheme = "gray",
-  activeVariant = "solid",
+  activeVariant = "subtle",
   activeColorScheme = "blue",
+  size = "md",
+  m,
+  mt,
+  mb,
+  ml,
+  mr,
+  mx,
+  my,
+  ...rest
 }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
 
   return (
-    <Collapsible.Root open={isOpen}>
-      <Box position="relative">
+    <Collapsible.Root open={open}>
+      <Box 
+        position="relative"
+        m={m}
+        mt={mt}
+        mb={mb}
+        ml={ml}
+        mr={mr}
+        mx={mx}
+        my={my}
+      >
         <Collapsible.Trigger asChild>
           <Button
             width="fit-content"
-            onClick={onOpen}
-            mb={isOpen ? 2 : 0}
-            variant={isOpen ? activeVariant : variant}
-            colorScheme={isOpen ? activeColorScheme : colorScheme}
-            leftIcon={icon}
+            onClick={() => setOpen(!open)}
+            mb={open ? 2 : 0}
+            variant={open ? activeVariant : variant}
+            colorScheme={open ? activeColorScheme : colorScheme}
+            size={size}
+            alignItems="center"
+            {...rest}
           >
-            {buttonText}
+            {typeof content === 'function' ? content({ isOpen: open }) : content}
           </Button>
         </Collapsible.Trigger>
 
         <Collapsible.Content>
-          {typeof children === "function" ? children({ onClose }) : children}
+          {typeof children === "function" ? children({ onClose: () => setOpen(false) }) : children}
         </Collapsible.Content>
       </Box>
     </Collapsible.Root>

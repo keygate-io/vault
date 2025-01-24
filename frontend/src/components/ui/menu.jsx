@@ -5,11 +5,16 @@ import * as React from "react";
 import { LuCheck, LuChevronRight } from "react-icons/lu";
 
 export const MenuContent = React.forwardRef(function MenuContent(props, ref) {
-  const { portalled = true, portalRef, ...rest } = props;
+  const { portalled = true, portalRef, _hover, ...rest } = props;
   return (
     <Portal disabled={!portalled} container={portalRef}>
-      <ChakraMenu.Positioner>
-        <ChakraMenu.Content ref={ref} {...rest} />
+      <ChakraMenu.Positioner >
+        <ChakraMenu.Content 
+          ref={ref} 
+          _hover={_hover || { bg: "gray.100", _dark: { bg: "gray.800" } }}
+          zIndex={10000} 
+          {...rest} 
+        />
       </ChakraMenu.Positioner>
     </Portal>
   );

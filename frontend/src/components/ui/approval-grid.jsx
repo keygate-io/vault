@@ -2,13 +2,13 @@ import { HStack, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 
-function ApprovalGrid({ signers, approvals }) {
+function ApprovalGrid({ signers, approvals, ...props }) {
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
 
   return (
-    <HStack spacing={1}>
+    <HStack spacing={1} {...props}>
       {signers.map((signer, index) => (
         <Tooltip key={signer.id} content={`${signer.name}'s Approval`}>
           <Box

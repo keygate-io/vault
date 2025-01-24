@@ -5,7 +5,7 @@ import { useColorModeValue } from "@/components/ui/color-mode";
 import SideMenu from "./sidemenu";
 import { useState } from "react";
 
-export default function Signers() {
+export default function Signers({ signers }) {
   const hoverBgColor = useColorModeValue("gray.100", "whiteAlpha.400");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -60,7 +60,6 @@ export default function Signers() {
           </HStack>
 
           <HStack
-            key="mock-signer-0"
             p={3}
             borderWidth={1}
             borderRadius="md"
@@ -69,49 +68,16 @@ export default function Signers() {
             alignItems="flex-start"
           >
             <AvatarGroup>
-              <Avatar
-                size="md"
-                name="Alice"
-                src="https://bit.ly/dan-abramov"
-                borderWidth={2}
-                isCurrentUser={true}
-              />
-              <Avatar
-                size="md"
-                name="Sam"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
-              <Avatar
-                size="md"
-                name="Bob"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
-              <Avatar
-                size="md"
-                name="Bob"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
-              <Avatar
-                size="md"
-                name="Bob"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
-              <Avatar
-                size="md"
-                name="Bob"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
-              <Avatar
-                size="md"
-                name="Bob"
-                src="https://bit.ly/sage-adebayo"
-                borderWidth={2}
-              />
+              {signers.map((signer) => (
+                <Avatar
+                  key={signer.id}
+                  size="md"
+                  name={signer.name}
+                  src={signer.avatarUrl}
+                  borderWidth={2}
+                  isCurrentUser={signer.isCurrentUser}
+                />
+              ))}
             </AvatarGroup>
           </HStack>
         </VStack>

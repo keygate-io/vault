@@ -10,12 +10,12 @@ export function generateMockTransactions(count = 2) {
   }));
 }
 
-export function generateMockSigners(count = 3) {
+export function generateMockSigners(count = 5) {
   return Array.from({ length: count }, (_, index) => ({
     id: index + 1,
     name: faker.person.firstName(),
     address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
-    avatarUrl: index < 2 ? faker.image.avatar() : null,
+    avatarUrl: faker.datatype.boolean() ? faker.image.avatar() : null,
     isCurrentUser: index === 0,
   }));
 }
