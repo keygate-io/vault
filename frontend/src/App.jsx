@@ -10,13 +10,14 @@ import {
 } from "@chakra-ui/react";
 import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import { Avatar, AvatarGroup } from "@/components/ui/avatar";
-import { ColorModeButton } from "@/components/ui/color-mode";
+import { ColorModeButton, useColorMode } from "@/components/ui/color-mode";
 import ApprovalGrid from "@/components/ui/approval-grid";
 import AddressDisplay from "@/components/ui/address-display";
 import BalanceDisplay from "@/components/ui/balance-display";
 
 function MultisigWallet() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { colorMode } = useColorMode();
   const mockTransactions = [
     {
       id: 1,
@@ -66,7 +67,11 @@ function MultisigWallet() {
         <HStack justify="space-between">
           <Box display="flex" alignItems="center" justifyContent="center">
             <Image
-              src="/keygate-logo.png"
+              src={
+                colorMode === "dark"
+                  ? "/keygate-logo-w.png"
+                  : "/keygate-logo.png"
+              }
               alt="Keygate Logo"
               height={{ base: "24px", sm: "28px", lg: "32px" }}
               mr={2}
@@ -138,7 +143,7 @@ function MultisigWallet() {
           </HStack>
         </VStack>
 
-        <VStack spacing={3} align="stretch">
+        <VStack spacing={3} align="stretch" mt={8}>
           <Button width="fit-content" onClick={onOpen}>
             New transaction
           </Button>

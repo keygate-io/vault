@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar as ChakraAvatar, Group, Box } from "@chakra-ui/react";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import * as React from "react";
 
 export const Avatar = React.forwardRef(function Avatar(props, ref) {
@@ -15,6 +16,10 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
     isCurrentUser,
     ...rest
   } = props;
+
+  const bgColor = useColorModeValue("black", "white");
+  const textColor = useColorModeValue("white", "black");
+  const borderColor = useColorModeValue("white", "gray.800");
 
   return (
     <Box position="relative" pb={isCurrentUser ? "5" : "0"}>
@@ -31,14 +36,14 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
           bottom="0"
           left="50%"
           transform="translateX(-50%)"
-          bg="black"
-          color="white"
+          bg={bgColor}
+          color={textColor}
           fontSize="xs"
           px="2"
           py="0"
           borderRadius="full"
           border="1px solid"
-          borderColor="white"
+          borderColor={borderColor}
           whiteSpace="nowrap"
           cursor="default"
         >
