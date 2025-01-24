@@ -10,8 +10,8 @@ import {
 } from "@chakra-ui/react";
 import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import { Avatar, AvatarGroup } from "@/components/ui/avatar";
-import { ProgressBar, ProgressRoot } from "@/components/ui/progress";
 import { ColorModeButton } from "@/components/ui/color-mode";
+import ApprovalGrid from "@/components/ui/approval-grid";
 
 function MultisigWallet() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -89,7 +89,6 @@ function MultisigWallet() {
                 name="Alice"
                 src="https://bit.ly/dan-abramov"
                 borderWidth={2}
-                borderColor="blue.200"
                 isCurrentUser={true}
               />
               <Avatar
@@ -97,42 +96,36 @@ function MultisigWallet() {
                 name="Sam"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
               <Avatar
                 size="md"
                 name="Bob"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
               <Avatar
                 size="md"
                 name="Bob"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
               <Avatar
                 size="md"
                 name="Bob"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
               <Avatar
                 size="md"
                 name="Bob"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
               <Avatar
                 size="md"
                 name="Bob"
                 src="https://bit.ly/sage-adebayo"
                 borderWidth={2}
-                borderColor="blue.200"
               />
             </AvatarGroup>
           </HStack>
@@ -150,17 +143,10 @@ function MultisigWallet() {
                   <Text fontSize="sm" color="gray.500">
                     {tx.amount}
                   </Text>
-                  <Stack width="100%">
-                    <ProgressRoot size="sm">
-                      <ProgressBar
-                        value={(tx.approvals / tx.required) * 100}
-                        colorScheme="blue"
-                      />
-                    </ProgressRoot>
-                  </Stack>
-                  <Text fontSize="sm" color="gray.500">
-                    {tx.approvals}/{tx.required} approvals
-                  </Text>
+                  <ApprovalGrid
+                    signers={mockSigners}
+                    approvals={tx.approvals}
+                  />
                 </VStack>
 
                 <Button
