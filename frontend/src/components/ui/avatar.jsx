@@ -21,8 +21,17 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
   const textColor = useColorModeValue("white", "black");
 
   return (
-    <Box position="relative" pb={isCurrentUser ? "5" : "0"}>
-      <ChakraAvatar.Root ref={ref} {...rest}>
+    <Box
+      position="relative"
+      pb={isCurrentUser ? "5" : "0"}
+      transition="transform 0.2s"
+      _hover={isCurrentUser ? { transform: "scale(1.05)" } : undefined}
+    >
+      <ChakraAvatar.Root
+        ref={ref}
+        {...rest}
+        cursor={isCurrentUser ? "pointer" : "default"}
+      >
         <AvatarFallback name={name} icon={icon}>
           {fallback}
         </AvatarFallback>
@@ -43,7 +52,7 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
           borderRadius="full"
           border="1px solid"
           whiteSpace="nowrap"
-          cursor="default"
+          cursor="pointer"
         >
           You
         </Box>
