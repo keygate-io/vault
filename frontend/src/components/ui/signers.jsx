@@ -29,7 +29,7 @@ export default function Signers() {
 
       <Box
         transition="margin-left 0.3s ease-in-out"
-        ml={isOpen ? "100px" : "0"}
+        ml={{ base: isOpen ? "30vh" : "0", xl: "0" }}
         position="relative"
         zIndex={10000}
       >
