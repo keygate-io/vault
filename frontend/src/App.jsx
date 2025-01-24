@@ -4,16 +4,26 @@ import {
   Text,
   useDisclosure,
   Button,
-  Stack,
   Box,
   Image,
+  Collapsible,
 } from "@chakra-ui/react";
-import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  PlusIcon,
+} from "@heroicons/react/24/solid";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Avatar, AvatarGroup } from "@/components/ui/avatar";
-import { ColorModeButton, useColorMode } from "@/components/ui/color-mode";
+import {
+  ColorModeButton,
+  useColorMode,
+  useColorModeValue,
+} from "@/components/ui/color-mode";
 import ApprovalGrid from "@/components/ui/approval-grid";
 import AddressDisplay from "@/components/ui/address-display";
 import BalanceDisplay from "@/components/ui/balance-display";
+import CreateTransaction from "@/components/ui/create-transaction";
 
 function MultisigWallet() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -144,9 +154,30 @@ function MultisigWallet() {
         </VStack>
 
         <VStack spacing={3} align="stretch" mt={8}>
-          <Button width="fit-content" onClick={onOpen}>
-            New transaction
-          </Button>
+          <Collapsible.Root open={isOpen}>
+            <Box position="relative">
+              <Collapsible.Trigger asChild>
+                <Button
+                  width="fit-content"
+                  onClick={onOpen}
+                  mb={isOpen ? 2 : 0}
+                  variant={isOpen ? "solid" : "outline"}
+                  colorScheme={isOpen ? "blue" : "gray"}
+                >
+                  <PlusIcon />
+                  New transaction
+                </Button>
+              </Collapsible.Trigger>
+
+              <Collapsible.Content>
+                <CreateTransaction
+                  onClose={onClose}
+                  mockSigners={mockSigners}
+                />
+              </Collapsible.Content>
+            </Box>
+          </Collapsible.Root>
+
           {mockTransactions.map((tx) => (
             <Box key={tx.id} p={4} borderWidth={1} borderRadius="md">
               <HStack justify="space-between" align="center">

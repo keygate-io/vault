@@ -19,7 +19,6 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
 
   const bgColor = useColorModeValue("black", "white");
   const textColor = useColorModeValue("white", "black");
-  const borderColor = useColorModeValue("white", "gray.800");
 
   return (
     <Box position="relative" pb={isCurrentUser ? "5" : "0"}>
@@ -43,7 +42,6 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
           py="0"
           borderRadius="full"
           border="1px solid"
-          borderColor={borderColor}
           whiteSpace="nowrap"
           cursor="default"
         >

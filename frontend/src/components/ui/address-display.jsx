@@ -1,5 +1,4 @@
-import { HStack, Text, IconButton, VStack } from "@chakra-ui/react";
-import { ClipboardIcon } from "@heroicons/react/24/outline";
+import { HStack, Text, VStack } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 
 function AddressDisplay({ address, type }) {
