@@ -81,6 +81,7 @@ function MultisigWallet() {
             borderRadius="md"
             spacing={3}
             bg="whiteAlpha.50"
+            alignItems="flex-start"
           >
             <AvatarGroup>
               <Avatar
@@ -89,9 +90,8 @@ function MultisigWallet() {
                 src="https://bit.ly/dan-abramov"
                 borderWidth={2}
                 borderColor="blue.200"
+                isCurrentUser={true}
               />
-            </AvatarGroup>
-            <AvatarGroup>
               <Avatar
                 size="md"
                 name="Sam"
@@ -99,8 +99,34 @@ function MultisigWallet() {
                 borderWidth={2}
                 borderColor="blue.200"
               />
-            </AvatarGroup>
-            <AvatarGroup>
+              <Avatar
+                size="md"
+                name="Bob"
+                src="https://bit.ly/sage-adebayo"
+                borderWidth={2}
+                borderColor="blue.200"
+              />
+              <Avatar
+                size="md"
+                name="Bob"
+                src="https://bit.ly/sage-adebayo"
+                borderWidth={2}
+                borderColor="blue.200"
+              />
+              <Avatar
+                size="md"
+                name="Bob"
+                src="https://bit.ly/sage-adebayo"
+                borderWidth={2}
+                borderColor="blue.200"
+              />
+              <Avatar
+                size="md"
+                name="Bob"
+                src="https://bit.ly/sage-adebayo"
+                borderWidth={2}
+                borderColor="blue.200"
+              />
               <Avatar
                 size="md"
                 name="Bob"

@@ -1,19 +1,51 @@
 "use client";
 
-import { Avatar as ChakraAvatar, Group } from "@chakra-ui/react";
+import { Avatar as ChakraAvatar, Group, Box } from "@chakra-ui/react";
 import * as React from "react";
 
 export const Avatar = React.forwardRef(function Avatar(props, ref) {
-  const { name, src, srcSet, loading, icon, fallback, children, ...rest } =
-    props;
+  const {
+    name,
+    src,
+    srcSet,
+    loading,
+    icon,
+    fallback,
+    children,
+    isCurrentUser,
+    ...rest
+  } = props;
+
   return (
-    <ChakraAvatar.Root ref={ref} {...rest}>
-      <AvatarFallback name={name} icon={icon}>
-        {fallback}
-      </AvatarFallback>
-      <ChakraAvatar.Image src={src} srcSet={srcSet} loading={loading} />
-      {children}
-    </ChakraAvatar.Root>
+    <Box position="relative" pb={isCurrentUser ? "5" : "0"}>
+      <ChakraAvatar.Root ref={ref} {...rest}>
+        <AvatarFallback name={name} icon={icon}>
+          {fallback}
+        </AvatarFallback>
+        <ChakraAvatar.Image src={src} srcSet={srcSet} loading={loading} />
+        {children}
+      </ChakraAvatar.Root>
+      {isCurrentUser && (
+        <Box
+          position="absolute"
+          bottom="0"
+          left="50%"
+          transform="translateX(-50%)"
+          bg="blue.500"
+          color="white"
+          fontSize="xs"
+          px="2"
+          py="0"
+          borderRadius="full"
+          border="1px solid"
+          borderColor="white"
+          whiteSpace="nowrap"
+          cursor="default"
+        >
+          You
+        </Box>
+      )}
+    </Box>
   );
 });
 
@@ -43,7 +75,7 @@ export const AvatarGroup = React.forwardRef(function AvatarGroup(props, ref) {
   const { size, variant, borderless, ...rest } = props;
   return (
     <ChakraAvatar.PropsProvider value={{ size, variant, borderless }}>
-      <Group gap="0" spaceX="-3" ref={ref} {...rest} />
+      <Group gap="0" spaceX="3" ref={ref} alignItems="flex-start" {...rest} />
     </ChakraAvatar.PropsProvider>
   );
 });
