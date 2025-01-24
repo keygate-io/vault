@@ -135,36 +135,56 @@ const CurrentUserPopoverContent = ({ name, src, srcSet, loading, icon, fallback 
   );
 };
 
-const OtherUserPopoverContent = ({ name, src, srcSet, loading, icon, fallback }) => (
+const OtherUserPopoverContent = ({
+  name,
+  src,
+  srcSet,
+  loading,
+  icon,
+  fallback,
+}) => (
   <VStack align="stretch" spacing={4}>
     <HStack spacing={3} justify="space-between">
       <HStack spacing={3}>
-        <ChakraAvatar.Root size="2xl" src={src} srcSet={srcSet} loading={loading}>
+        <ChakraAvatar.Root
+          size="2xl"
+          src={src}
+          srcSet={srcSet}
+          loading={loading}
+        >
           <AvatarFallback name={name} icon={icon}>
             {fallback}
           </AvatarFallback>
           <ChakraAvatar.Image src={src} srcSet={srcSet} loading={loading} />
         </ChakraAvatar.Root>
         <VStack align="start" spacing={1}>
-          <Text fontWeight="medium" fontSize="md">{name}</Text>
-          <Text fontSize="sm" color="gray.500">{name} has access to this wallet.</Text>
+          <Text fontWeight="medium" fontSize="md">
+            {name}
+          </Text>
+          <Text fontSize="sm" color="gray.500">
+            {name} has access to this wallet.
+          </Text>
         </VStack>
       </HStack>
     </HStack>
-    <CollapsibleButton 
+    <CollapsibleButton
       content={({ isOpen }) => (
         <HStack spacing={2}>
           <ChevronRightIcon className="w-4 h-4" />
-          <Text fontSize="sm">{isOpen ? "Hide risky actions" : "Show risky actions"}</Text>
+          <Text fontSize="sm">
+            {isOpen ? "Hide risky actions" : "Show risky actions"}
+          </Text>
         </HStack>
       )}
-      variant="ghost" 
+      variant="ghost"
       size="xs"
       mt={2}
       colorScheme="gray"
     >
       <VStack align="stretch" spacing={2} pt={2}>
-        <Button size="sm" variant="ghost" color="red.500">Remove Access</Button>
+        <Button size="sm" variant="ghost" color="red.500">
+          Remove access
+        </Button>
       </VStack>
     </CollapsibleButton>
   </VStack>
