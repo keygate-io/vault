@@ -91,7 +91,7 @@ const CreateTransaction = ({ onClose }) => {
               value={recipient}
               variant="subtle"
               onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Enter recipient's Principal ID or Account Identifier"
+              placeholder="Enter recipient identifier"
               paddingLeft={10}
               width="100%"
               maxWidth="600px"
