@@ -6,6 +6,7 @@ import {
   Button,
   Stack,
   Box,
+  Image,
 } from "@chakra-ui/react";
 import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import { Avatar, AvatarGroup } from "@/components/ui/avatar";
@@ -56,9 +57,17 @@ function MultisigWallet() {
   ];
 
   return (
-    <Box maxW="1100px" mx="auto">
+    <Box maxW="1100px" mx="auto" pt={8}>
       <VStack spacing={4} p={4} align="stretch">
         <HStack justify="space-between">
+          <Box display="flex" alignItems="center" justifyContent="center">
+            <Image
+              src="/keygate-logo.png"
+              alt="Keygate Logo"
+              height={{ base: "24px", sm: "28px", lg: "32px" }}
+              mr={2}
+            />
+          </Box>
           <ColorModeButton />
         </HStack>
         <VStack spacing={3} align="stretch" mt={4}>
