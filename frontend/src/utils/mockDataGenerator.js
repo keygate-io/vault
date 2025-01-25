@@ -1,5 +1,13 @@
 import { faker } from "@faker-js/faker"; // You'd need to install this package
 
+export function generateDefaultTransactionTraits() {
+  return {
+    isExecuted: false,
+    isSuccessful: false,
+    approvals: 0,
+  };
+}
+
 export function generateMockTransactions() {
   const minimumSuccessful = 1;
   const minimumExecuted = 1;

@@ -5,6 +5,10 @@ export const FETCH_TRANSACTIONS_REQUEST = "FETCH_TRANSACTIONS_REQUEST";
 export const FETCH_TRANSACTIONS_SUCCESS = "FETCH_TRANSACTIONS_SUCCESS";
 export const FETCH_TRANSACTIONS_FAILURE = "FETCH_TRANSACTIONS_FAILURE";
 
+export const CREATE_TRANSACTION_REQUEST = "CREATE_TRANSACTION_REQUEST";
+export const CREATE_TRANSACTION_SUCCESS = "CREATE_TRANSACTION_SUCCESS";
+export const CREATE_TRANSACTION_FAILURE = "CREATE_TRANSACTION_FAILURE";
+
 const fetchTransactionsRequest = () => ({
   type: FETCH_TRANSACTIONS_REQUEST,
 });
@@ -29,6 +33,34 @@ export const fetchTransactions = () => {
       dispatch(fetchTransactionsSuccess(transactions));
     } catch (error) {
       dispatch(fetchTransactionsFailure(error.message));
+    }
+  };
+};
+
+const createTransactionRequest = () => ({
+  type: CREATE_TRANSACTION_REQUEST,
+});
+
+const createTransactionSuccess = (transaction) => ({
+  type: CREATE_TRANSACTION_SUCCESS,
+  payload: transaction,
+});
+
+const createTransactionFailure = (error) => ({
+  type: CREATE_TRANSACTION_FAILURE,
+  payload: error,
+});
+
+export const createTransaction = (transactionData) => {
+  return async (dispatch) => {
+    dispatch(createTransactionRequest());
+    try {
+      const RepositoryType = getRepository("transactions");
+      const repository = new RepositoryType();
+      const transaction = await repository.create(transactionData);
+      dispatch(createTransactionSuccess(transaction));
+    } catch (error) {
+      dispatch(createTransactionFailure(error.message));
     }
   };
 };

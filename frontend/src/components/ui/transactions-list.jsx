@@ -45,6 +45,11 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
     setFilteredTransactions(applySelectedFilters(transactions));
   }, [selectedFilters, transactions]);
 
+
+  useEffect(() => {
+    console.log(transactions);
+  }, [transactions]);
+
   if (!transactions.length) {
     return <EmptyTransactions />;
   }
@@ -61,6 +66,7 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
           filters={filters}
           selectedFilters={selectedFilters}
           onChange={setSelectedFilters}
+          singleSelect={true}
         />
       </HStack>
       {filteredTransactions.map((tx) => (

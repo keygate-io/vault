@@ -36,12 +36,13 @@ export default function FilterButtonGroup({
   filters,
   selectedFilters,
   onChange,
+  singleSelect = false,
 }) {
   function notifyToggle(filter) {
     if (selectedFilters.includes(filter)) {
       onChange(selectedFilters.filter((f) => f !== filter));
     } else {
-      onChange([...selectedFilters, filter]);
+      onChange(singleSelect ? [filter] : [...selectedFilters, filter]);
     }
   }
 
@@ -71,4 +72,5 @@ FilterButtonGroup.propTypes = {
   filters: PropTypes.arrayOf(PropTypes.object).isRequired,
   selectedFilters: PropTypes.arrayOf(PropTypes.object).isRequired,
   onChange: PropTypes.func.isRequired,
+  singleSelect: PropTypes.bool,
 };

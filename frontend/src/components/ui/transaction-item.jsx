@@ -41,6 +41,10 @@ const TransactionItem = ({ tx, signers, threshold }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
 
   useEffect(() => {
+    console.log("tx", tx);
+  }, [tx]);
+
+  useEffect(() => {
     if (tx.isSuccessful) {
       setDerivedSentimentColor("kg.good");
     } else if (tx.isExecuted && !tx.isSuccessful) {
@@ -100,6 +104,7 @@ const TransactionItem = ({ tx, signers, threshold }) => {
         signers={signers}
         approvals={tx.approvals}
         threshold={threshold}
+        showThreshold={true}
       />
     );
   }

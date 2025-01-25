@@ -22,12 +22,15 @@ import {
   MenuItem,
 } from "@/components/ui/menu";
 import { InputGroup } from "@/components/ui/input-group";
-import { InMemoryTransactionRepository } from "@/repository/transactions";
+import { useDispatch } from "react-redux";
+import { createTransaction } from "@/state/transactions_actions";
 
 const CreateTransaction = ({ onClose }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [formStep, setFormStep] = useState("idle");
+
+  const dispatch = useDispatch();
 
   const simulateSending = () => {
     setFormStep("sending");
@@ -65,14 +68,13 @@ const CreateTransaction = ({ onClose }) => {
   };
 
   const handleCreateTransaction = async () => {
-    const transactionRepository = new InMemoryTransactionRepository();
     const transaction = {
       recipient: recipient,
       amount: amount,
     };
 
     // leave creation request in flight
-    transactionRepository.create(transaction);
+    dispatch(createTransaction(transaction));
 
     await simulateSending(); // (we already have the transaction in flight)
   };

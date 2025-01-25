@@ -9,8 +9,8 @@ import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
 import { generateMockThreshold } from "@/utils/mockDataGenerator";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTransactions } from "@/state/transactions_fetcher";
-import { fetchSigners } from "@/state/signers_fetcher";
+import { fetchTransactions } from "@/state/transactions_actions";
+import { fetchSigners } from "@/state/signers_actions";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
