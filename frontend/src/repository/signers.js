@@ -1,3 +1,6 @@
+import { GlobalSettings } from "@/constants/global_config";
+import { generateMockSigners } from "@/utils/mockDataGenerator";
+
 // Signer model/type definition
 export class Signer {
   constructor(id, name, avatarUrl, isCurrentUser = false) {
@@ -39,13 +42,21 @@ export class SignerRepository {
   }
 }
 
+// Prepare mocked signers
+const mockedSigners = generateMockSigners();
+
 // In-memory implementation of the repository
 class InMemorySignerRepository extends SignerRepository {
-  constructor(initialSigners = [], artificialDelay = 0) {
+  constructor(initialSigners = []) {
     super();
     this.signers = new Map();
+
+    if (GlobalSettings.signers.source === "mock") {
+      initialSigners = mockedSigners;
+      console.log("Using mocked signers");
+    }
+
     initialSigners.forEach((signer) => this.signers.set(signer.id, signer));
-    this.artificialDelay = artificialDelay;
   }
 
   async getAll() {

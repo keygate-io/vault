@@ -110,3 +110,9 @@ export function generateMockSigners() {
     isCurrentUser: index === 0,
   }));
 }
+
+
+let lastTransactionId = 0;
+export function generateMockTransactionId() {
+  return lastTransactionId++;
+}

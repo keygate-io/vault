@@ -7,39 +7,23 @@ import Signers from "@/components/ui/signers";
 import Header from "@/components/ui/header";
 import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
-import {
-  generateMockTransactions,
-  generateMockSigners,
-  generateMockThreshold,
-} from "@/utils/mockDataGenerator";
-import { InMemorySignerRepository } from "@/repository/signers";
-import { InMemoryTransactionRepository } from "@/repository/transactions";
+import { generateMockThreshold } from "@/utils/mockDataGenerator";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTransactions } from "@/state/transactions_fetcher";
+import { fetchSigners } from "@/state/signers_fetcher";
 
 function MultisigWallet() {
-  const [transactions, setTransactions] = useState([]);
-  const [signers, setSigners] = useState([]);
-  const [threshold, setThreshold] = useState(1);
+  const dispatch = useDispatch();
+  const { transactions } = useSelector((state) => state.transactions);
+
+  const { signers } = useSelector((state) => state.signers);
 
   useEffect(() => {
-    async function fetchSigners() {
-      const initialSigners = generateMockSigners();
-      const signersRepo = new InMemorySignerRepository(initialSigners);
-      const signersArray = await signersRepo.getAll();
-      setSigners(signersArray);
-    }
+    dispatch(fetchTransactions());
+    dispatch(fetchSigners());
+  }, [dispatch]);
 
-    async function fetchTransactions() {
-      const initialTransactions = generateMockTransactions();
-      const transactionsRepo = new InMemoryTransactionRepository(
-        initialTransactions
-      );
-      const transactionsArray = await transactionsRepo.getAll();
-      setTransactions(transactionsArray);
-    }
-
-    fetchTransactions();
-    fetchSigners();
-  }, []);
+  const [threshold, setThreshold] = useState(1);
 
   useEffect(() => {
     if (signers.length > 0) {

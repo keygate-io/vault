@@ -1,4 +1,12 @@
-import { Box, Button, VStack, Text, Input, Separator } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  Separator,
+} from "@chakra-ui/react";
 import {
   XMarkIcon,
   QuestionMarkCircleIcon,
@@ -14,21 +22,63 @@ import {
   MenuItem,
 } from "@/components/ui/menu";
 import { InputGroup } from "@/components/ui/input-group";
+import { InMemoryTransactionRepository } from "@/repository/transactions";
 
 const CreateTransaction = ({ onClose }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [formStep, setFormStep] = useState("idle");
+
+  const simulateSending = () => {
+    setFormStep("sending");
+    setTimeout(() => {
+      scheduleFormCleanup();
+      scheduleFormClose();
+      setFormStep("sent");
+    }, 2000);
+  };
+
+  const scheduleFormCleanup = () => {
+    setTimeout(() => {
+      setRecipient("");
+      setAmount("");
+      setFormStep("idle");
+    }, 2000);
+  };
+
+  const scheduleFormClose = () => {
+    setTimeout(() => {
+      onClose();
+    }, 1000);
+  };
+
+  const deriveStepDisplayText = () => {
+    if (formStep === "sending") {
+      return "Sending to decentralized vault...";
+    }
+
+    if (formStep === "sent") {
+      return "Sent.";
+    }
+
+    return "";
+  };
+
+  const handleCreateTransaction = async () => {
+    const transactionRepository = new InMemoryTransactionRepository();
+    const transaction = {
+      recipient: recipient,
+      amount: amount,
+    };
+
+    // leave creation request in flight
+    transactionRepository.create(transaction);
+
+    await simulateSending(); // (we already have the transaction in flight)
+  };
 
   return (
-    <Box
-      p={4}
-      borderWidth="1px"
-      borderRadius="md"
-      position="relative"
-      mt={2}
-      transition="all 0.2s"
-      transform="translateY(0)"
-    >
+    <Box p={4} borderWidth="1px" borderRadius="md" position="relative" mt={2}>
       <Button
         size="sm"
         variant="ghost"
@@ -116,15 +166,20 @@ const CreateTransaction = ({ onClose }) => {
           </InputGroup>
         </VStack>
 
+        <Box overflow="hidden" minHeight="20px">
+          <Text fontSize="xs" animation="pulse 2s ease-in-out infinite">
+            {deriveStepDisplayText()}
+          </Text>
+        </Box>
+
         <Button
           alignSelf="flex-start"
           colorScheme="blue"
           size="xs"
-          mt={4}
           leftIcon={<ClockIcon />}
-          onClick={() => {
-            onClose();
-          }}
+          onClick={handleCreateTransaction}
+          disabled={formStep !== "idle"}
+          cursor={formStep === "idle" ? "pointer" : "default"}
         >
           Create
         </Button>

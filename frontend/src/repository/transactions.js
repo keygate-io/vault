@@ -1,6 +1,7 @@
-/* global console */
+import { generateMockTransactionId } from "@/utils/mockDataGenerator";
+import { GlobalSettings } from "@/constants/global_config";
+import { generateMockTransactions } from "@/utils/mockDataGenerator";
 
-// Transaction model/type definition
 // @SuppressWarnings("javascript:S2094")
 export class Transaction {
   constructor(params = {}) {
@@ -64,11 +65,19 @@ export class TransactionRepository {
   }
 }
 
+// Prepare mocked transactions
+const mockedTransactions = generateMockTransactions();
+
 // In-memory implementation of the repository
 class InMemoryTransactionRepository extends TransactionRepository {
   constructor(initialTransactions = []) {
     super();
     this.transactions = new Map();
+
+    if (GlobalSettings.transactions.source === "mock") {
+      initialTransactions = mockedTransactions;
+    }
+
     initialTransactions.forEach((transaction) =>
       this.transactions.set(transaction.id, transaction)
     );
@@ -83,7 +92,13 @@ class InMemoryTransactionRepository extends TransactionRepository {
   }
 
   async create(transaction) {
-    this.transactions.set(transaction.id, transaction);
+    // Simulate creation request to external service (by timing out)
+    setTimeout(() => {
+      const id = generateMockTransactionId();
+      // Simulate receiving a transaction from external service
+      this.transactions.set(id, { ...transaction, id });
+    }, 1000);
+
     return transaction;
   }
 
