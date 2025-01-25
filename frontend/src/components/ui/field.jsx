@@ -30,9 +30,7 @@ export const Field = React.forwardRef(function Field(props, ref) {
       )}
       {children}
       {helperText && (
-        <ChakraField.HelperText fontSize="2xs">
-          {helperText}
-        </ChakraField.HelperText>
+        <ChakraField.HelperText>{helperText}</ChakraField.HelperText>
       )}
       {errorText && <ChakraField.ErrorText>{errorText}</ChakraField.ErrorText>}
     </ChakraField.Root>

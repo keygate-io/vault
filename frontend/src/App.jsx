@@ -11,14 +11,16 @@ import { generateMockThreshold } from "@/utils/mockDataGenerator";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "@/state/transactions_actions";
 import { fetchSigners } from "@/state/signers_actions";
-
+import { fetchVault } from "@/state/vault_actions";
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions } = useSelector((state) => state.transactions);
 
   const { signers } = useSelector((state) => state.signers);
+  const { vault_details } = useSelector((state) => state.vault);
 
   useEffect(() => {
+    dispatch(fetchVault());
     dispatch(fetchTransactions());
     dispatch(fetchSigners());
   }, [dispatch]);
@@ -37,7 +39,7 @@ function MultisigWallet() {
         <Header />
 
         <Box mt={4}>
-          <BalanceDisplay balance="125.45" symbol="ICP" />
+          <BalanceDisplay balance={vault_details.balance} symbol="ICP" />
         </Box>
 
         <Signers signers={signers} />

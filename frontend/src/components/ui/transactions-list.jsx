@@ -46,10 +46,6 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
   }, [selectedFilters, transactions]);
 
 
-  useEffect(() => {
-    console.log(transactions);
-  }, [transactions]);
-
   if (!transactions.length) {
     return <EmptyTransactions />;
   }

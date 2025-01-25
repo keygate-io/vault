@@ -53,7 +53,6 @@ class InMemorySignerRepository extends SignerRepository {
 
     if (GlobalSettings.signers.source === "mock") {
       initialSigners = mockedSigners;
-      console.log("Using mocked signers");
     }
 
     initialSigners.forEach((signer) => this.signers.set(signer.id, signer));

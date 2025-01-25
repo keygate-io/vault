@@ -124,3 +124,9 @@ let lastTransactionId = 0;
 export function generateMockTransactionId() {
   return lastTransactionId++;
 }
+
+export function generateMockVault() {
+  return {
+    balance: faker.number.float({ min: 0, max: 1000, precision: 0.01 }),
+  };
+}

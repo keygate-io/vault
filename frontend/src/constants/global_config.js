@@ -5,6 +5,9 @@ const GlobalSettings = {
   signers: {
     source: "mock",
   },
+  vault: {
+    source: "mock",
+  },
 };
 
 export { GlobalSettings };
