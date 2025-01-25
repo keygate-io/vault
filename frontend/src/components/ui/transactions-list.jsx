@@ -51,7 +51,10 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
 
   return (
     <VStack spacing={3} align="stretch">
-      <HStack spacing={2} fontSize="sm" mt={6}>
+      <Text fontSize="lg" fontWeight="semibold" mt={6}>
+        Transaction History
+      </Text>
+      <HStack spacing={2} fontSize="sm">
         <Text color="gray.500">Filter by status:</Text>
         <FilterButtonGroup
           filters={filters}

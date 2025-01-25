@@ -4,16 +4,20 @@ import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
-import TransactionBadge from "@/components/ui/transaction-badge";
+import {
+  SentimentTransactionBadge,
+  TransactionBadge,
+} from "@/components/ui/transaction-badge";
 import floatPrecision from "@/utils/floatPrecision";
+import { useState, useEffect } from "react";
 
 const ActionExecuteButton = ({ tx, threshold }) => {
   return (
     <Button
-      variant={tx.approvals >= threshold ? "solid" : "outline"}
-      colorScheme={tx.approvals >= threshold ? "green" : "blue"}
-      disabled={tx.approvals >= threshold}
-      size="sm"
+      variant={tx.approvals.length >= threshold ? "solid" : "outline"}
+      colorScheme={tx.approvals.length >= threshold ? "green" : "blue"}
+      disabled={tx.approvals.length >= threshold}
+      size="xs"
     >
       Execute
     </Button>
@@ -27,13 +31,25 @@ ActionExecuteButton.propTypes = {
 
 const ActionApproveButton = () => {
   return (
-    <Button variant="outline" colorScheme="blue" size="sm">
+    <Button variant="outline" colorScheme="blue" size="xs">
       Approve
     </Button>
   );
 };
 
 const TransactionItem = ({ tx, signers, threshold }) => {
+  const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
+
+  useEffect(() => {
+    if (tx.isSuccessful) {
+      setDerivedSentimentColor("kg.good");
+    } else if (tx.isExecuted && !tx.isSuccessful) {
+      setDerivedSentimentColor("kg.bad");
+    } else {
+      setDerivedSentimentColor("kg.neutral");
+    }
+  }, [tx.isSuccessful]);
+
   function deriveStatusDisplayText() {
     if (tx.isExecuted && tx.isSuccessful) {
       return "Executed";
@@ -98,7 +114,10 @@ const TransactionItem = ({ tx, signers, threshold }) => {
           />
           <HStack>
             <TransactionBadge content={`${floatPrecision(tx.amount)} ICP`} />
-            <TransactionBadge content={deriveStatusDisplayText()} />
+            <SentimentTransactionBadge
+              content={deriveStatusDisplayText()}
+              sentiment={derivedSentimentColor}
+            />
           </HStack>
         </VStack>
 
