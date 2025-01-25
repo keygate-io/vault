@@ -40,7 +40,9 @@ export default function FilterButtonGroup({
 }) {
   function notifyToggle(filter) {
     if (selectedFilters.includes(filter)) {
-      onChange(selectedFilters.filter((f) => f !== filter));
+      if (!singleSelect) {
+        onChange(selectedFilters.filter((f) => f !== filter));
+      }
     } else {
       onChange(singleSelect ? [filter] : [...selectedFilters, filter]);
     }
