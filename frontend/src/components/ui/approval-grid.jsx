@@ -2,10 +2,13 @@ import { HStack, Box, Flex, VStack, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
+import { useSelector } from "react-redux";
+import { makeSelectApprovalsByTxId } from "@/state/transactions_derived";
+import { useEffect } from "react";
 
 export function ApprovalGrid({
   signers,
-  approvals,
+  txId,
   threshold,
   showThreshold,
   ...props
@@ -13,6 +16,13 @@ export function ApprovalGrid({
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
+
+  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
+  const approvals = useSelector((state) => selectApprovalsByTxId(state, txId));
+
+  useEffect(() => {
+    console.log("approvals for txId", txId, approvals);
+  }, [approvals]);
 
   const BOX_WIDTH = 16; // px
   const BOX_SPACING = 8.25; // px, equivalent to spacing={1} in HStack
@@ -30,11 +40,6 @@ export function ApprovalGrid({
           bg={index < approvals ? approvedBg : unapprovedBg}
           borderWidth={1}
           borderColor={borderColor}
-          //   mr={
-          //     index === signers.length - 1 && adjustedThreshold === signers.length
-          //       ? "23px"
-          //       : "0px"
-          //   }
         />
       </Tooltip>
     );
@@ -94,7 +99,7 @@ ApprovalGrid.propTypes = {
       name: PropTypes.string.isRequired,
     })
   ).isRequired,
-  approvals: PropTypes.number.isRequired,
+  txId: PropTypes.number.isRequired,
   threshold: PropTypes.number.isRequired,
 };
 

@@ -14,7 +14,7 @@ import { fetchSigners } from "@/state/signers_actions";
 import { fetchVault } from "@/state/vault_actions";
 function MultisigWallet() {
   const dispatch = useDispatch();
-  const { transactions } = useSelector((state) => state.transactions);
+  const { transactions_list } = useSelector((state) => state.transactions);
 
   const { signers } = useSelector((state) => state.signers);
   const { vault_details } = useSelector((state) => state.vault);
@@ -61,7 +61,7 @@ function MultisigWallet() {
           </CollapsibleButton>
 
           <TransactionsList
-            transactions={transactions}
+            transactions={transactions_list}
             signers={signers}
             threshold={threshold}
           />

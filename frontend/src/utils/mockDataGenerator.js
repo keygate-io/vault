@@ -42,7 +42,6 @@ export function generateMockTransactions() {
         max: 10,
         precision: 0.1,
       })} ICP`,
-      approvals: faker.number.int({ min: 2, max: 3 }),
       ...successfulTransactionTraits,
     });
   }
@@ -57,7 +56,6 @@ export function generateMockTransactions() {
         max: 10,
         precision: 0.1,
       })} ICP`,
-      approvals: faker.number.int({ min: 0, max: 1 }),
       ...failedTransactionTraits,
     });
   }
@@ -72,7 +70,6 @@ export function generateMockTransactions() {
         max: 10,
         precision: 0.1,
       })} ICP`,
-      approvals: faker.number.int({ min: 0, max: 3 }),
       isExecuted: false,
       isSuccessful: false,
     });
@@ -81,18 +78,21 @@ export function generateMockTransactions() {
   // Fill remaining slots with random transactions
   const remaining = count - transactions.length;
   for (let i = 0; i < remaining; i++) {
-    transactions.push({
-      id: transactions.length + 1,
-      recipient: faker.string.hexadecimal({ length: 64, prefix: "" }),
-      amount: `${faker.number.float({
-        min: 0.1,
-        max: 10,
-        precision: 0.1,
-      })} ICP`,
-      approvals: faker.number.int({ min: 0, max: 3 }),
-      isExecuted: faker.datatype.boolean(),
-      isSuccessful: faker.datatype.boolean(),
-    });
+    const isExecuted = faker.datatype.boolean();
+    if (isExecuted) {
+      transactions.push({
+        id: transactions.length + 1,
+        recipient: faker.string.hexadecimal({ length: 64, prefix: "" }),
+        amount: `${faker.number.float({
+          min: 0.1,
+          max: 10,
+          precision: 0.1,
+        })} ICP`,
+        approvals: faker.number.int({ min: 0, max: 3 }),
+        isExecuted: true,
+        isSuccessful: faker.datatype.boolean(),
+      });
+    }
   }
 
   return transactions;
@@ -102,7 +102,20 @@ export function generateMockThreshold(minimum = 1, maximum = 5) {
   return faker.number.int({ min: minimum, max: maximum });
 }
 
+let mockedCurrentUser = {
+  id: 1,
+  name: "Travis",
+  address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
+  avatarUrl:
+    "https://static.wikia.nocookie.net/charactercommunity/images/3/32/Piplup_%28Pokémon%29.png",
+};
+
+export function getMockedCurrentUser() {
+  return mockedCurrentUser;
+}
+
 export function generateMockSigners() {
+  // first one is current user
   const minimumSigners = 1;
   const maximumSigners = 5;
   const count = faker.number.int({
@@ -110,13 +123,25 @@ export function generateMockSigners() {
     max: maximumSigners,
   });
 
-  return Array.from({ length: count }, (_, index) => ({
-    id: index + 1,
-    name: faker.person.firstName(),
-    address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
-    avatarUrl: faker.datatype.boolean() ? faker.image.avatar() : null,
-    isCurrentUser: index === 0,
-  }));
+  const signers = [
+    {
+      ...mockedCurrentUser,
+      isCurrentUser: true,
+    },
+  ];
+
+  // Generate additional signers
+  for (let i = 1; i < count; i++) {
+    signers.push({
+      id: i + 1,
+      name: faker.person.firstName(),
+      address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
+      avatarUrl: faker.datatype.boolean() ? faker.image.avatar() : null,
+      isCurrentUser: false,
+    });
+  }
+
+  return signers;
 }
 
 

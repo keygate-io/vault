@@ -10,13 +10,18 @@ import {
 } from "@/components/ui/transaction-badge";
 import floatPrecision from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
-
+import { useDispatch, useSelector } from "react-redux";
+import { approveTransaction } from "@/state/transactions_actions";
+import { makeSelectApprovalsByTxId } from "@/state/transactions_derived";
 const ActionExecuteButton = ({ tx, threshold }) => {
+  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
+  const approvals = useSelector((state) => selectApprovalsByTxId(state, tx.id));
+
   return (
     <Button
-      variant={tx.approvals.length >= threshold ? "solid" : "outline"}
-      colorScheme={tx.approvals.length >= threshold ? "green" : "blue"}
-      disabled={tx.approvals.length >= threshold}
+      variant={approvals >= threshold ? "solid" : "outline"}
+      colorScheme={approvals >= threshold ? "green" : "blue"}
+      disabled={approvals >= threshold}
       size="xs"
     >
       Execute
@@ -29,16 +34,32 @@ ActionExecuteButton.propTypes = {
   threshold: PropTypes.number.isRequired,
 };
 
-const ActionApproveButton = () => {
+const ActionApproveButton = ({ txId }) => {
+  const dispatch = useDispatch();
+  const { approveLoading } = useSelector((state) => state);
+
+  const handleApprove = () => {
+    console.log("approving transaction", txId);
+    dispatch(approveTransaction(txId));
+  };
+
   return (
-    <Button variant="outline" colorScheme="blue" size="xs">
-      Approve
+    <Button
+      variant="outline"
+      colorScheme="blue"
+      size="xs"
+      onClick={handleApprove}
+      isLoading={approveLoading}
+    >
+      Approve {approveLoading}
     </Button>
   );
 };
 
 const TransactionItem = ({ tx, signers, threshold }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
+  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
+  const approvals = useSelector((state) => selectApprovalsByTxId(state, tx.id));
 
   useEffect(() => {
     if (tx.isSuccessful) {
@@ -83,11 +104,11 @@ const TransactionItem = ({ tx, signers, threshold }) => {
       return <CheckCircleIcon color="white" width={20} height={20} />;
     }
 
-    if (tx.approvals >= threshold) {
+    if (approvals >= threshold) {
       return <ActionExecuteButton tx={tx} threshold={threshold} />;
     }
 
-    return <ActionApproveButton />;
+    return <ActionApproveButton txId={tx.id} />;
   }
 
   function conditionallyRenderApprovalGrid() {
@@ -98,9 +119,10 @@ const TransactionItem = ({ tx, signers, threshold }) => {
     return (
       <ApprovalGrid
         signers={signers}
-        approvals={tx.approvals}
+        approvals={approvals}
         threshold={threshold}
         showThreshold={true}
+        txId={tx.id}
       />
     );
   }

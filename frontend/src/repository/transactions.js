@@ -4,6 +4,7 @@ import {
   generateMockTransactions,
   generateDefaultTransactionTraits,
 } from "@/utils/mockDataGenerator";
+import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
 
 // @SuppressWarnings("javascript:S2094")
 export class Transaction {
@@ -66,6 +67,11 @@ export class TransactionRepository {
   async getByStatus(status) {
     throw new Error("Not implemented");
   }
+
+  // eslint-disable-next-line no-unused-vars
+  async approve(id) {
+    throw new Error("Not implemented");
+  }
 }
 
 // Prepare mocked transactions
@@ -76,6 +82,7 @@ class InMemoryTransactionRepository extends TransactionRepository {
   constructor(initialTransactions = []) {
     super();
     this.transactions = new Map();
+    this.approvals = new Map();
 
     if (GlobalSettings.transactions.source === "mock") {
       initialTransactions = mockedTransactions;
@@ -99,9 +106,12 @@ class InMemoryTransactionRepository extends TransactionRepository {
     const defaultTraits = generateDefaultTransactionTraits();
 
     // Simulate creation request to external service (by timing out)
-    await setTimeout(() => {}, 1000);
+    await setTimeout(() => {}, 4000);
 
-    return { ...transaction, id, ...defaultTraits };
+    let materializedTransaction = { ...transaction, id, ...defaultTraits };
+    this.transactions.set(id, materializedTransaction);
+
+    return materializedTransaction;
   }
 
   async createMany(transactions) {
@@ -118,6 +128,24 @@ class InMemoryTransactionRepository extends TransactionRepository {
 
   async delete(id) {
     return this.transactions.delete(id);
+  }
+
+  async approve(txId) {
+    await setTimeout(() => {}, 4000);
+
+    let transaction = this.transactions.get(txId);
+
+    let currentSigner = getMockedCurrentUser();
+    let signerId = currentSigner.id;
+
+    let existingApprovals = this.approvals.get(txId) || [];
+    let newApprovals = [...existingApprovals, [signerId, true]];
+
+    this.approvals.set(txId, newApprovals);
+
+    console.log(this.approvals);
+
+    return transaction;
   }
 
   async getByStatus(targetStatus) {
