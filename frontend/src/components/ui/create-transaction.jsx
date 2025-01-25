@@ -1,34 +1,23 @@
-import {
-  Box,
-  Button,
-  VStack,
-  HStack,
-  Text,
-  Input,
-  Separator,
-} from "@chakra-ui/react";
+import { Box, Button, VStack, Text, Input } from "@chakra-ui/react";
 import {
   XMarkIcon,
-  QuestionMarkCircleIcon,
   UserCircleIcon,
   CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { ClockIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
-import {
-  MenuRoot,
-  MenuTrigger,
-  MenuContent,
-  MenuItem,
-} from "@/components/ui/menu";
 import { InputGroup } from "@/components/ui/input-group";
 import { useDispatch } from "react-redux";
 import { createTransaction } from "@/state/transactions_actions";
+import { Field } from "@/components/ui/field";
+import { isValidPrincipal } from "@/utils/cryptoAddressFormats";
+import { isValidAccountIdentifier } from "@/utils/cryptoAddressFormats";
 
 const CreateTransaction = ({ onClose }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [formStep, setFormStep] = useState("idle");
+  const [isValidRecipient, setIsValidRecipient] = useState(true);
 
   const dispatch = useDispatch();
 
@@ -68,6 +57,15 @@ const CreateTransaction = ({ onClose }) => {
   };
 
   const handleCreateTransaction = async () => {
+    const isValid =
+      isValidPrincipal(recipient) || isValidAccountIdentifier(recipient);
+
+    setIsValidRecipient(isValid);
+
+    if (!isValid) {
+      return;
+    }
+
     const transaction = {
       recipient: recipient,
       amount: amount,
@@ -94,63 +92,34 @@ const CreateTransaction = ({ onClose }) => {
 
       <VStack align="start" spacing={4}>
         <VStack align="start" spacing={3} width="100%">
-          <MenuRoot>
-            <MenuTrigger asChild>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Text fontSize="sm" fontWeight="medium" color="gray.600">
-                  Recipient
-                </Text>
-                <QuestionMarkCircleIcon width={16} cursor="pointer" />
-              </Box>
-            </MenuTrigger>
-            <MenuContent _hover={{ bg: "gray.950" }} p={3}>
-              <MenuItem bg="transparent" _hover={{ bg: "transparent" }}>
-                <VStack align="start" spacing={1}>
-                  <Text fontWeight="semibold">Principal ID</Text>
-                  <Text fontSize="sm" color="gray.400">
-                    The unique identifier for an Internet Computer user or
-                    canister.
-                  </Text>
-                  <Text fontSize="sm">
-                    Example: rrkah-fqaaa-aaaaa-aaaaq-cai
-                  </Text>
-                </VStack>
-              </MenuItem>
-              <Separator />
-              <MenuItem bg="transparent" _hover={{ bg: "transparent" }}>
-                <VStack align="start" spacing={1}>
-                  <Text fontWeight="semibold">Account Identifier</Text>
-                  <Text fontSize="sm" color="gray.400">
-                    A 64-character hex string that represents an ICP ledger
-                    account.
-                  </Text>
-                  <Text fontSize="sm" wordBreak="break-all">
-                    Example:
-                    d9f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3b3b3f3
-                  </Text>
-                </VStack>
-              </MenuItem>
-            </MenuContent>
-          </MenuRoot>
-          <InputGroup
-            flex="1"
+          <Field
+            value={recipient}
             width="100%"
             maxWidth="600px"
-            startElement={<UserCircleIcon width={16} />}
+            label="Recipient"
+            size="sm"
+            errorText={
+              !isValidRecipient
+                ? "Please enter a principal (e.g. rrkah-fqaaa-aaaaa-aaaaq-cai) or an account identifier (64 characters, hexadecimal)."
+                : undefined
+            }
+            invalid={!isValidRecipient}
           >
-            <Input
-              size="sm"
-              value={recipient}
-              variant="subtle"
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Enter recipient identifier"
-              paddingLeft={10}
+            <InputGroup
+              startElement={<UserCircleIcon width={16} />}
               width="100%"
               maxWidth="600px"
-            />
-          </InputGroup>
-
-          <Box display="flex" alignItems="center" gap={2}>
+            >
+              <Input
+                value={recipient}
+                size="sm"
+                variant="subtle"
+                onChange={(e) => setRecipient(e.target.value)}
+                placeholder="Enter recipient identifier"
+              />
+            </InputGroup>
+          </Field>
+          <Box display="flex" alignItems="center" gap={2} mt={2}>
             <Text fontSize="sm" fontWeight="medium" color="gray.600">
               Amount (ICP)
             </Text>
@@ -169,7 +138,14 @@ const CreateTransaction = ({ onClose }) => {
         </VStack>
 
         <Box overflow="hidden" minHeight="20px">
-          <Text fontSize="xs" animation="pulse 2s ease-in-out infinite">
+          <Text
+            fontSize="xs"
+            animation={
+              formStep === "sending"
+                ? "pulse 1s ease-in-out infinite"
+                : undefined
+            }
+          >
             {deriveStepDisplayText()}
           </Text>
         </Box>

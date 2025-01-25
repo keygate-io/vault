@@ -25,7 +25,7 @@ export default function Header() {
         onClick={() => setOpen(true)}
         cursor="pointer"
       >
-        Need help? check out this demo!
+        Need help? Check out this demo!
       </Link>
       <DemoModal isOpen={open} onClose={() => setOpen(false)} />
     </VStack>
