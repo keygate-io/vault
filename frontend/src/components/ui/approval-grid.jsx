@@ -3,7 +3,13 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
 
-export function ApprovalGrid({ signers, approvals, threshold, ...props }) {
+export function ApprovalGrid({
+  signers,
+  approvals,
+  threshold,
+  showThreshold,
+  ...props
+}) {
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
@@ -33,7 +39,7 @@ export function ApprovalGrid({ signers, approvals, threshold, ...props }) {
       </Tooltip>
     );
 
-    if (signers.length > 1) {
+    if (signers.length > 1 && showThreshold) {
       const nextBlockPosition =
         (adjustedThreshold - 1) * (BOX_WIDTH + BOX_SPACING) -
         BOX_SPACING / 2 +

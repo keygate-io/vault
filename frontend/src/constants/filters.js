@@ -13,7 +13,7 @@ const ExecutedFilter = {
 const FailedFilter = {
   value: "failed",
   label: "Failed",
-  fn: (tx) => tx.isSuccessful === false,
+  fn: (tx) => tx.isExecuted && tx.isSuccessful === false,
 };
 
 export { PendingFilter, ExecutedFilter, FailedFilter };

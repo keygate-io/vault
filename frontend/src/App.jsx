@@ -22,14 +22,14 @@ function MultisigWallet() {
 
   useEffect(() => {
     async function fetchSigners() {
-      const initialSigners = generateMockSigners(1, 5);
+      const initialSigners = generateMockSigners();
       const signersRepo = new InMemorySignerRepository(initialSigners);
       const signersArray = await signersRepo.getAll();
       setSigners(signersArray);
     }
 
     async function fetchTransactions() {
-      const initialTransactions = generateMockTransactions(0, 5);
+      const initialTransactions = generateMockTransactions();
       const transactionsRepo = new InMemoryTransactionRepository(
         initialTransactions
       );
