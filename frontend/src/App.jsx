@@ -1,4 +1,4 @@
-import { VStack, Box, HStack, Text, Button } from "@chakra-ui/react";
+import { VStack, Box, HStack, Text } from "@chakra-ui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useState, useEffect } from "react";
 import BalanceDisplay from "@/components/ui/balance-display";
@@ -7,10 +7,10 @@ import Signers from "@/components/ui/signers";
 import Header from "@/components/ui/header";
 import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
-import FilterButtonGroup from "@/components/ui/filter-button-group";
 import {
   generateMockTransactions,
   generateMockSigners,
+  generateMockThreshold,
 } from "@/utils/mockDataGenerator";
 import { InMemorySignerRepository } from "@/repository/signers";
 import { InMemoryTransactionRepository } from "@/repository/transactions";
@@ -18,7 +18,7 @@ import { InMemoryTransactionRepository } from "@/repository/transactions";
 function MultisigWallet() {
   const [transactions, setTransactions] = useState([]);
   const [signers, setSigners] = useState([]);
-  const [selectedFilters, setSelectedFilters] = useState(["under_review"]);
+  const [threshold, setThreshold] = useState(1);
 
   useEffect(() => {
     async function fetchSigners() {
@@ -41,11 +41,11 @@ function MultisigWallet() {
     fetchSigners();
   }, []);
 
-  const filters = [
-    { value: "under_review", label: "Under review" },
-    { value: "approved", label: "Approved" },
-    { value: "rejected", label: "Rejected" },
-  ];
+  useEffect(() => {
+    if (signers.length > 0) {
+      setThreshold(generateMockThreshold(1, signers.length));
+    }
+  }, [signers]);
 
   return (
     <Box maxW="1100px" mx="auto" pt={8}>
@@ -74,20 +74,10 @@ function MultisigWallet() {
             )}
           </CollapsibleButton>
 
-          <HStack spacing={2} fontSize="sm" mt={6}>
-            <Text color="gray.500">Filter by status:</Text>
-            <FilterButtonGroup
-              filters={filters}
-              selectedFilters={selectedFilters}
-              onChange={setSelectedFilters}
-            />
-          </HStack>
-
           <TransactionsList
             transactions={transactions}
             signers={signers}
-            threshold={3}
-            filters={selectedFilters}
+            threshold={threshold}
           />
         </VStack>
       </VStack>

@@ -13,21 +13,27 @@ export class SignerRepository {
   async getAll() {
     throw new Error("Not implemented");
   }
+  // eslint-disable-next-line no-unused-vars
   async getById(id) {
     throw new Error("Not implemented");
   }
+
+  // eslint-disable-next-line no-unused-vars
   async create(signer) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async createMany(signers) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async update(id, signer) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async delete(id) {
     throw new Error("Not implemented");
   }

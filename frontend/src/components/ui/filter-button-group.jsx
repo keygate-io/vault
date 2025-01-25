@@ -1,4 +1,5 @@
 import { Box, HStack, Button } from "@chakra-ui/react";
+import PropTypes from "prop-types";
 
 function FilterButton({ label, isSelected, onClick }) {
   return (
@@ -25,19 +26,24 @@ function FilterButton({ label, isSelected, onClick }) {
   );
 }
 
+FilterButton.propTypes = {
+  label: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool.isRequired,
+  onClick: PropTypes.func.isRequired,
+};
+
 export default function FilterButtonGroup({
   filters,
   selectedFilters,
   onChange,
 }) {
-  const toggleFilter = (filter) => {
-    onChange((prev) => {
-      if (prev.includes(filter)) {
-        return prev.filter((f) => f !== filter);
-      }
-      return [...prev, filter];
-    });
-  };
+  function notifyToggle(filter) {
+    if (selectedFilters.includes(filter)) {
+      onChange(selectedFilters.filter((f) => f !== filter));
+    } else {
+      onChange([...selectedFilters, filter]);
+    }
+  }
 
   return (
     <Box
@@ -52,11 +58,17 @@ export default function FilterButtonGroup({
           <FilterButton
             key={filter.value}
             label={filter.label}
-            isSelected={selectedFilters.includes(filter.value)}
-            onClick={() => toggleFilter(filter.value)}
+            isSelected={selectedFilters.includes(filter)}
+            onClick={() => notifyToggle(filter)}
           />
         ))}
       </HStack>
     </Box>
   );
 }
+
+FilterButtonGroup.propTypes = {
+  filters: PropTypes.arrayOf(PropTypes.object).isRequired,
+  selectedFilters: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onChange: PropTypes.func.isRequired,
+};

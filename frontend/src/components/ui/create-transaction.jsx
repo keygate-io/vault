@@ -119,7 +119,7 @@ const CreateTransaction = ({ onClose }) => {
         <Button
           alignSelf="flex-start"
           colorScheme="blue"
-          size="sm"
+          size="xs"
           mt={4}
           leftIcon={<ClockIcon />}
           onClick={() => {

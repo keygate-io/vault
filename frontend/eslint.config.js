@@ -24,6 +24,7 @@ export default [
       globals: {
         document: "readonly",
         __dirname: "readonly",
+        crypto: "readonly",
       },
       parserOptions: {
         ecmaFeatures: {

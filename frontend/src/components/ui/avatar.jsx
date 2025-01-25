@@ -1,18 +1,36 @@
 "use client";
 
-import { Avatar as ChakraAvatar, Group, Box, VStack, Text, HStack, Button, IconButton, Input } from "@chakra-ui/react";
+import {
+  Avatar as ChakraAvatar,
+  Group,
+  Box,
+  VStack,
+  Text,
+  HStack,
+  Button,
+  Input,
+} from "@chakra-ui/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import * as React from "react";
-import { PopoverRoot, PopoverTrigger, PopoverContent, PopoverArrow } from "./popover";
-import { EllipsisVerticalIcon, ChevronRightIcon, PencilIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
-import { MenuRoot, MenuItem, MenuContent, MenuTrigger } from "./menu";
+import {
+  PopoverRoot,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+} from "./popover";
+import {
+  ChevronRightIcon,
+  PencilIcon,
+  ArrowUpTrayIcon,
+} from "@heroicons/react/24/outline";
 import CollapsibleButton from "@/components/ui/collapsible-button";
-import { InputGroup } from "@/components/ui/input-group";
-import { UserCircleIcon } from "@heroicons/react/24/outline";
+import PropTypes from "prop-types";
 
 const ViewMode = ({ name, onEdit }) => (
   <HStack spacing={3} justify="space-between">
-    <Text fontWeight="medium" fontSize="md">{name}</Text>
+    <Text fontWeight="medium" fontSize="md">
+      {name}
+    </Text>
     <Button
       variant="ghost"
       size="xs"
@@ -34,18 +52,21 @@ const EditingMode = ({ name, onChange, onConfirm }) => (
       size="sm"
       paddingLeft={4}
     />
-    <Button
-      variant="ghost"
-      size="xs"
-      colorScheme="gray"
-      onClick={onConfirm}
-    >
+    <Button variant="ghost" size="xs" colorScheme="gray" onClick={onConfirm}>
       Confirm
     </Button>
   </HStack>
 );
 
-const AvatarWithUpload = ({ src, srcSet, loading, name, icon, fallback, isEditing }) => (
+const AvatarWithUpload = ({
+  src,
+  srcSet,
+  loading,
+  name,
+  icon,
+  fallback,
+  isEditing,
+}) => (
   <Box position="relative">
     <ChakraAvatar.Root size="2xl" src={src} srcSet={srcSet} loading={loading}>
       <AvatarFallback name={name} icon={icon}>
@@ -72,7 +93,14 @@ const AvatarWithUpload = ({ src, srcSet, loading, name, icon, fallback, isEditin
   </Box>
 );
 
-const CurrentUserPopoverContent = ({ name, src, srcSet, loading, icon, fallback }) => {
+const CurrentUserPopoverContent = ({
+  name,
+  src,
+  srcSet,
+  loading,
+  icon,
+  fallback,
+}) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedName, setEditedName] = React.useState(name);
 
@@ -106,33 +134,45 @@ const CurrentUserPopoverContent = ({ name, src, srcSet, loading, icon, fallback 
                 onConfirm={handleToggleEdit}
               />
             ) : (
-              <ViewMode
-                name={name}
-                onEdit={handleToggleEdit}
-              />
+              <ViewMode name={name} onEdit={handleToggleEdit} />
             )}
-            <Text fontSize="sm" color="gray.500">This is you.</Text>
+            <Text fontSize="sm" color="gray.500">
+              This is you.
+            </Text>
           </VStack>
         </HStack>
       </HStack>
-      <CollapsibleButton 
+      <CollapsibleButton
         content={({ isOpen }) => (
           <HStack spacing={2}>
             <ChevronRightIcon className="w-4 h-4" />
-            <Text fontSize="sm">{isOpen ? "Hide risky actions" : "Show risky actions"}</Text>
+            <Text fontSize="sm">
+              {isOpen ? "Hide risky actions" : "Show risky actions"}
+            </Text>
           </HStack>
         )}
-        variant="ghost" 
+        variant="ghost"
         size="xs"
         mt={2}
         colorScheme="gray"
       >
         <VStack align="stretch" spacing={2} pt={2}>
-          <Button size="sm" variant="ghost" color="red.500">Step down</Button>
+          <Button size="sm" variant="ghost" color="red.500">
+            Step down
+          </Button>
         </VStack>
       </CollapsibleButton>
     </VStack>
   );
+};
+
+CurrentUserPopoverContent.propTypes = {
+  name: PropTypes.string.isRequired,
+  src: PropTypes.string,
+  srcSet: PropTypes.string,
+  loading: PropTypes.string,
+  icon: PropTypes.node,
+  fallback: PropTypes.node,
 };
 
 const OtherUserPopoverContent = ({
@@ -206,7 +246,6 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
 
   const bgColor = useColorModeValue("black", "white");
   const textColor = useColorModeValue("white", "black");
-  const borderColor = useColorModeValue("gray.200", "whiteAlpha.300");
 
   const defaultPopoverContent = isCurrentUser ? (
     <CurrentUserPopoverContent
@@ -229,7 +268,7 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
   );
 
   return (
-    <PopoverRoot placement="bottom" offset={[0, 20]} >
+    <PopoverRoot placement="bottom" offset={[0, 20]}>
       <PopoverTrigger>
         <Box
           position="relative"
@@ -237,11 +276,7 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
           transition="transform 0.2s"
           _hover={isCurrentUser ? { transform: "scale(1.05)" } : undefined}
         >
-          <ChakraAvatar.Root
-            ref={ref}
-            {...rest}
-            cursor="pointer"
-          >
+          <ChakraAvatar.Root ref={ref} {...rest} cursor="pointer">
             <AvatarFallback name={name} icon={icon}>
               {fallback}
             </AvatarFallback>
@@ -271,9 +306,7 @@ export const Avatar = React.forwardRef(function Avatar(props, ref) {
       </PopoverTrigger>
       <PopoverContent minW="300px" zIndex={10000}>
         <PopoverArrow />
-        <Box p="4">
-          {popoverContent || defaultPopoverContent}
-        </Box>
+        <Box p="4">{popoverContent || defaultPopoverContent}</Box>
       </PopoverContent>
     </PopoverRoot>
   );

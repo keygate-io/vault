@@ -1,10 +1,29 @@
+/* global console */
+
 // Transaction model/type definition
+// @SuppressWarnings("javascript:S2094")
 export class Transaction {
-  constructor(id, recipient, amount, approvals = 0) {
+  constructor(params = {}) {
+    const { id, recipient, amount, isSuccessful, isExecuted } = params;
+
+    if (
+      !id ||
+      !recipient ||
+      isSuccessful === undefined ||
+      isExecuted === undefined ||
+      amount === undefined
+    ) {
+      console.warn(
+        "Transaction initialisation is missing required parameters. This could lead to unexpected behaviour."
+      );
+    }
+
     this.id = id;
-    this.recipient = recipient;
-    this.amount = amount;
-    this.approvals = approvals;
+    this.recipient = recipient || "";
+    this.amount = amount || 0;
+    this.approvals = params.approvals || 0;
+    this.isExecuted = isExecuted || false;
+    this.isSuccessful = isSuccessful || false;
   }
 }
 
@@ -13,22 +32,34 @@ export class TransactionRepository {
   async getAll() {
     throw new Error("Not implemented");
   }
+
+  // eslint-disable-next-line no-unused-vars
   async getById(id) {
     throw new Error("Not implemented");
   }
+
+  // eslint-disable-next-line no-unused-vars
   async create(transaction) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async createMany(transactions) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async update(id, transaction) {
     throw new Error("Not implemented");
   }
 
+  // eslint-disable-next-line no-unused-vars
   async delete(id) {
+    throw new Error("Not implemented");
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  async getByStatus(status) {
     throw new Error("Not implemented");
   }
 }
@@ -70,6 +101,39 @@ class InMemoryTransactionRepository extends TransactionRepository {
 
   async delete(id) {
     return this.transactions.delete(id);
+  }
+
+  async getByStatus(targetStatus) {
+    if (!["under review", "approved", "rejected"].includes(targetStatus)) {
+      throw new Error("Invalid status");
+    }
+
+    function extractByStatus(transactions) {
+      switch (targetStatus) {
+        case "pending":
+          return transactions.filter(
+            (transaction) => transaction.isExecuted === false
+          );
+        case "executed":
+          return transactions.filter(
+            (transaction) =>
+              transaction.isExecuted === true &&
+              transaction.isSuccessful === true
+          );
+        case "failed":
+          return transactions.filter(
+            (transaction) => transaction.isSuccessful === false
+          );
+        default:
+          console.warn(
+            `Unknown status: ${targetStatus}. Returning all transactions. This could lead to unexpected behaviour.`
+          );
+
+          return transactions;
+      }
+    }
+
+    return extractByStatus(this.transactions);
   }
 }
 

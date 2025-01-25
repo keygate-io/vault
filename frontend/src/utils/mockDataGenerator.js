@@ -8,7 +8,13 @@ export function generateMockTransactions(minimum = 0, maximum = 5) {
     recipient: faker.string.hexadecimal({ length: 64, prefix: "" }),
     amount: `${faker.number.float({ min: 0.1, max: 10, precision: 0.1 })} ICP`,
     approvals: faker.number.int({ min: 0, max: 3 }),
+    isExecuted: faker.datatype.boolean(),
+    isSuccessful: faker.datatype.boolean(),
   }));
+}
+
+export function generateMockThreshold(minimum = 1, maximum = 5) {
+  return faker.number.int({ min: minimum, max: maximum });
 }
 
 export function generateMockSigners(minimum = 0, maximum = 5) {
