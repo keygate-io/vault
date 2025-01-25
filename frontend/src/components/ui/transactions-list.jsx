@@ -1,4 +1,4 @@
-import { HStack, VStack, Text, Center } from "@chakra-ui/react";
+import { HStack, VStack, Text, Center, Separator } from "@chakra-ui/react";
 import { InboxIcon } from "@heroicons/react/24/solid";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import FilterButtonGroup from "@/components/ui/filter-button-group";
@@ -54,7 +54,8 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
       <Text fontSize="lg" fontWeight="semibold" mt={6}>
         Transaction History
       </Text>
-      <HStack spacing={2} fontSize="sm">
+      <Separator />
+      <HStack spacing={2} fontSize="sm" mt={2} mb={2}>
         <Text color="gray.500">Filter by status:</Text>
         <FilterButtonGroup
           filters={filters}
