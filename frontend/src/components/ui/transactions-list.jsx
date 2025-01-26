@@ -79,8 +79,6 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
 
 TransactionsList.propTypes = {
   transactions: PropTypes.array.isRequired,
-  signers: PropTypes.array.isRequired,
-  threshold: PropTypes.number.isRequired,
 };
 
 export default TransactionsList;

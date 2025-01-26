@@ -1,13 +1,26 @@
 import { VStack, HStack, Text, Box } from "@chakra-ui/react";
-import { Avatar, AvatarGroup } from "@/components/ui/avatar";
+import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
+import { InformationalAvatar } from "@/components/ui/avatar/informational-avatar";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import SideMenu from "./sidemenu";
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { selectVaultSigners } from "@/state/signers_slice";
+import { selectCurrentVaultId } from "@/state/session_slice";
+import { selectUsersByIds } from "@/state/users_slice";
+import { selectCurrentUserId } from "@/state/session_slice";
 
-export default function Signers({ signers }) {
+export default function Signers() {
   const hoverBgColor = useColorModeValue("gray.100", "whiteAlpha.400");
   const [isOpen, setIsOpen] = useState(false);
+  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const currentUserId = useSelector((state) => selectCurrentUserId(state));
+  const signerIds = useSelector((state) =>
+    selectVaultSigners(state, currentVaultId)
+  );
+
+  const signers = useSelector((state) => selectUsersByIds(state, signerIds));
 
   const handleToggle = () => {
     setIsOpen(!isOpen);
@@ -69,13 +82,13 @@ export default function Signers({ signers }) {
           >
             <AvatarGroup>
               {signers.map((signer) => (
-                <Avatar
+                <InformationalAvatar
                   key={signer.id}
                   size="md"
                   name={signer.name}
                   src={signer.avatarUrl}
                   borderWidth={2}
-                  isCurrentUser={signer.isCurrentUser}
+                  isCurrentUser={signer.id === currentUserId}
                 />
               ))}
             </AvatarGroup>

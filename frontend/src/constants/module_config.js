@@ -1,6 +1,8 @@
 import { InMemoryTransactionRepository } from "@/repository/transactions";
 import { InMemorySignerRepository } from "@/repository/signers";
-import { InMemoryVaultRepository } from "@/repository/vault";
+import { InMemoryVaultRepository } from "@/repository/vaults";
+import { InMemorySessionRepository } from "@/repository/session";
+import { InMemoryUserRepository } from "@/repository/users";
 import { GlobalSettings } from "@/constants/global_config";
 
 const SourceToRepository = {
@@ -10,8 +12,14 @@ const SourceToRepository = {
   signers: {
     mock: InMemorySignerRepository,
   },
-  vault: {
+  vaults: {
     mock: InMemoryVaultRepository,
+  },
+  session: {
+    mock: InMemorySessionRepository,
+  },
+  users: {
+    mock: InMemoryUserRepository,
   },
 };
 

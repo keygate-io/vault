@@ -114,44 +114,106 @@ export function getMockedCurrentUser() {
   return mockedCurrentUser;
 }
 
-export function generateMockSigners() {
-  // first one is current user
-  const minimumSigners = 1;
-  const maximumSigners = 5;
-  const count = faker.number.int({
-    min: minimumSigners,
-    max: maximumSigners,
-  });
+// Initialize lastUserId to be higher than the current user's ID
+let lastUserId = mockedCurrentUser.id;
+export function generateMockUserId() {
+  return ++lastUserId;
+}
 
-  const signers = [
-    {
-      ...mockedCurrentUser,
-      isCurrentUser: true,
-    },
-  ];
+const generatedMockUsers = [];
+export function generateMockUsers() {
+  if (generatedMockUsers.length > 0) {
+    return generatedMockUsers;
+  }
 
-  // Generate additional signers
-  for (let i = 1; i < count; i++) {
-    signers.push({
-      id: i + 1,
+  // Add mocked current user first
+  generatedMockUsers.push(getMockedCurrentUser());
+
+  for (let i = 0; i < 9; i++) {
+    generatedMockUsers.push({
+      id: generateMockUserId(),
       name: faker.person.firstName(),
-      address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
-      avatarUrl: faker.datatype.boolean() ? faker.image.avatar() : null,
-      isCurrentUser: false,
+      avatarUrl: faker.image.avatarGitHub(),
     });
   }
+  return generatedMockUsers;
+}
+
+let generatedMockSigners = {};
+export function generateMockSigners() {
+  if (generatedMockSigners.length > 0) {
+    return generatedMockSigners;
+  }
+
+  let signers = {};
+  const currentUser = getMockedCurrentUser();
+  const users = generateMockUsers();
+
+  for (let vault of generatedMockVaults) {
+    // select mocked users at random
+    const index_start = faker.number.int({ min: 0, max: users.length - 1 });
+    const index_end = faker.number.int({
+      min: index_start + 1,
+      max: users.length,
+    });
+
+    const signers_for_vault = users
+      .slice(index_start, index_end)
+      .map((user) => user.id);
+
+    // Add current user if not already included
+    if (!signers_for_vault.includes(currentUser.id)) {
+      signers_for_vault.push(currentUser.id);
+    }
+
+    signers[vault.id] = signers_for_vault;
+  }
+
+  // Ensure each vault has at least one signer
+  for (let vault of generatedMockVaults) {
+    if (!signers[vault.id] || signers[vault.id].length === 0) {
+      console.warn("Mocked vault has no signers", vault.id);
+    }
+  }
+
+  generatedMockSigners = signers;
 
   return signers;
 }
-
 
 let lastTransactionId = 0;
 export function generateMockTransactionId() {
   return lastTransactionId++;
 }
 
+let lastVaultId = 0;
 export function generateMockVault() {
   return {
+    id: lastVaultId++,
     balance: faker.number.float({ min: 0, max: 1000, precision: 0.01 }),
+    threshold: faker.number.int({ min: 1, max: 5 }),
   };
+}
+
+let generatedMockVaults = [];
+export function generateMockVaults(numberOfVaults = 3) {
+  if (generatedMockVaults.length > 0) {
+    return generatedMockVaults;
+  }
+
+  const vaults = [];
+  for (let i = 0; i < numberOfVaults; i++) {
+    vaults.push(generateMockVault());
+  }
+  generatedMockVaults = vaults;
+  return vaults;
+}
+
+let mockedCurrentVault = {
+  id: 1,
+  name: "Vault 1",
+};
+
+export function getMockedCurrentVault() {
+  return mockedCurrentVault;
 }

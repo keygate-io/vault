@@ -7,14 +7,23 @@ const GlobalSettings = {
     source: "mock",
     enabled: true,
   },
-  vault: {
+  vaults: {
     source: "mock",
     enabled: true,
+    mock_vaults: 10,
   },
   header: {
     enabled: true,
   },
   dev_mode: {
+    enabled: true,
+  },
+  session: {
+    source: "mock",
+    enabled: true,
+  },
+  users: {
+    source: "mock",
     enabled: true,
   },
 };

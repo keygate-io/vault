@@ -1,6 +1,6 @@
 import { VStack, Box, HStack, Text } from "@chakra-ui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import BalanceDisplay from "@/components/ui/balance-display";
 import CreateTransaction from "@/components/ui/create-transaction";
 import Signers from "@/components/ui/signers";
@@ -8,32 +8,41 @@ import Header from "@/components/ui/header";
 import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
 import DevModePanel from "@/components/ui/dev-mode-panel";
-import { generateMockThreshold } from "@/utils/mockDataGenerator";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "@/state/transactions_actions";
-import { fetchSigners } from "@/state/signers_actions";
-import { fetchVault } from "@/state/vault_actions";
+import { getAllUsers } from "@/state/users_slice";
+import { login, selectCurrentVaultId } from "@/state/session_slice";
 import { Feature } from "@/components/ui/feature";
+import { fetchVaultById } from "@/state/vaults_slice";
+import { fetchSignersForVault } from "@/state/signers_slice";
+import { fetchSession } from "@/state/session_slice";
+import { fetchVaults } from "@/state/vaults_slice";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions_list } = useSelector((state) => state.transactions);
-  const { signers } = useSelector((state) => state.signers);
-  const { vault_details } = useSelector((state) => state.vault);
+  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
 
   useEffect(() => {
-    dispatch(fetchVault());
+    // CORE: First, we login
+    dispatch(login());
+    // CORE: Then, we fetch the transactions
     dispatch(fetchTransactions());
-    dispatch(fetchSigners());
+    // CORE: We get all the vaults
+    dispatch(fetchVaults());
+    // CORE: Then, we fetch the session
+    dispatch(fetchSession());
+    // ADMIN: Then, we fetch the users
+    dispatch(getAllUsers());
   }, [dispatch]);
 
-  const [threshold, setThreshold] = useState(1);
-
+  // CORE: Once we have the session, we can fetch the vault and the signers
   useEffect(() => {
-    if (signers.length > 0) {
-      setThreshold(generateMockThreshold(1, signers.length));
+    if (currentVaultId) {
+      dispatch(fetchVaultById(currentVaultId));
+      dispatch(fetchSignersForVault(currentVaultId));
     }
-  }, [signers]);
+  }, [currentVaultId, dispatch]);
 
   return (
     <Box maxW="1100px" mx="auto" pt={8}>
@@ -42,14 +51,14 @@ function MultisigWallet() {
           <Header />
         </Feature>
 
-        <Feature name="vault">
+        <Feature name="vaults">
           <Box mt={4}>
-            <BalanceDisplay balance={vault_details.balance} symbol="ICP" />
+            <BalanceDisplay symbol="ICP" />
           </Box>
         </Feature>
 
         <Feature name="signers">
-          <Signers signers={signers} />
+          <Signers />
         </Feature>
 
         <Feature name="transactions">
@@ -64,16 +73,10 @@ function MultisigWallet() {
               size="sm"
               colorScheme="gray"
             >
-              {({ onClose }) => (
-                <CreateTransaction onClose={onClose} signers={signers} />
-              )}
+              {({ onClose }) => <CreateTransaction onClose={onClose} />}
             </CollapsibleButton>
 
-            <TransactionsList
-              transactions={transactions_list}
-              signers={signers}
-              threshold={threshold}
-            />
+            <TransactionsList transactions={transactions_list} />
           </VStack>
         </Feature>
       </VStack>

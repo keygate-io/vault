@@ -133,8 +133,6 @@ class InMemoryTransactionRepository extends TransactionRepository {
   async approve(txId) {
     await setTimeout(() => {}, 4000);
 
-    let transaction = this.transactions.get(txId);
-
     let currentSigner = getMockedCurrentUser();
     let signerId = currentSigner.id;
 
@@ -143,9 +141,7 @@ class InMemoryTransactionRepository extends TransactionRepository {
 
     this.approvals.set(txId, newApprovals);
 
-    console.log(this.approvals);
-
-    return transaction;
+    return serializeMap(this.approvals);
   }
 
   async getByStatus(targetStatus) {

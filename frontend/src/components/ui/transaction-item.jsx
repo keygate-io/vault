@@ -2,7 +2,6 @@ import { HStack, VStack, Text, Button, Box } from "@chakra-ui/react";
 import { CheckCircleIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
 import {
   SentimentTransactionBadge,
@@ -11,10 +10,18 @@ import {
 import floatPrecision from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { approveTransaction } from "@/state/approvals_slice";
-const ActionExecuteButton = ({ tx, threshold }) => {
-  const approvals = useSelector(
-    (state) => state.approvals.approvals_map[tx.id]
+import {
+  approveTransaction,
+  hasUserApprovedThisTxId,
+  selectApprovalsCount,
+} from "@/state/approvals_slice";
+import { selectVaultThreshold } from "@/state/vaults_slice";
+
+const ActionExecuteButton = ({ tx }) => {
+  const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
+
+  const threshold = useSelector((state) =>
+    selectVaultThreshold(state, tx.vaultId)
   );
 
   return (
@@ -31,36 +38,43 @@ const ActionExecuteButton = ({ tx, threshold }) => {
 
 ActionExecuteButton.propTypes = {
   tx: PropTypes.object.isRequired,
-  threshold: PropTypes.number.isRequired,
 };
 
 const ActionApproveButton = ({ txId }) => {
   const dispatch = useDispatch();
   const { approveLoading } = useSelector((state) => state.approvals);
+  const currentUser = useSelector((state) => state.session.currentUser);
+  const _hasUserApprovedThisTxId = useSelector((state) =>
+    hasUserApprovedThisTxId(state, txId, currentUser?.id)
+  );
 
   const handleApprove = () => {
-    console.log("approving transaction", txId);
     dispatch(approveTransaction(txId));
   };
 
   return (
     <Button
-      variant="outline"
-      colorScheme="blue"
+      variant={_hasUserApprovedThisTxId ? "ghost" : "solid"}
       size="xs"
       onClick={handleApprove}
       isLoading={approveLoading}
+      disabled={_hasUserApprovedThisTxId}
     >
-      Approve {approveLoading}
+      {_hasUserApprovedThisTxId && (
+        <CheckCircleIcon color="green" width={12} height={12} />
+      )}
+      {_hasUserApprovedThisTxId ? "Approved." : "Approve"}
     </Button>
   );
 };
 
-const TransactionItem = ({ tx, signers, threshold }) => {
+const TransactionItem = ({ tx }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
-  const approvals = useSelector(
-    (state) => state.approvals.approvals_map[tx.id]
+  const threshold = useSelector((state) =>
+    selectVaultThreshold(state, tx.vaultId)
   );
+
+  const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
 
   useEffect(() => {
     if (tx.isSuccessful) {
@@ -83,9 +97,6 @@ const TransactionItem = ({ tx, signers, threshold }) => {
 
     return "Pending";
   }
-
-  /* eslint-disable-next-line */
-  const bgColor = useColorModeValue("gray.50", "whiteAlpha.100");
 
   function conditionallyRenderActionButton() {
     if (tx.isExecuted) {
@@ -117,15 +128,7 @@ const TransactionItem = ({ tx, signers, threshold }) => {
       return null;
     }
 
-    return (
-      <ApprovalGrid
-        signers={signers}
-        approvals={approvals}
-        threshold={threshold}
-        showThreshold={true}
-        txId={tx.id}
-      />
-    );
+    return <ApprovalGrid showThreshold={true} txId={tx.id} />;
   }
 
   return (
@@ -156,8 +159,6 @@ const TransactionItem = ({ tx, signers, threshold }) => {
 
 TransactionItem.propTypes = {
   tx: PropTypes.object.isRequired,
-  signers: PropTypes.array.isRequired,
-  threshold: PropTypes.number.isRequired,
 };
 
 export default TransactionItem;
