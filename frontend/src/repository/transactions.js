@@ -4,16 +4,17 @@ import {
   generateMockTransactions,
   generateDefaultTransactionTraits,
 } from "@/utils/mockDataGenerator";
-import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
 
 // @SuppressWarnings("javascript:S2094")
 export class Transaction {
   constructor(params = {}) {
-    const { id, recipient, amount, isSuccessful, isExecuted } = params;
+    const { id, recipient, amount, isSuccessful, isExecuted, vault_id } =
+      params;
 
     if (
       !id ||
       !recipient ||
+      !vault_id ||
       isSuccessful === undefined ||
       isExecuted === undefined ||
       amount === undefined
@@ -24,9 +25,9 @@ export class Transaction {
     }
 
     this.id = id;
+    this.vault_id = vault_id;
     this.recipient = recipient || "";
     this.amount = amount || 0;
-    this.approvals = params.approvals || 0;
     this.isExecuted = isExecuted || false;
     this.isSuccessful = isSuccessful || false;
   }
@@ -38,38 +39,31 @@ export class TransactionRepository {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
+  async getByVaultId(vault_id) {
+    throw new Error("Not implemented");
+  }
+
   async getById(id) {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async create(transaction) {
+  async create(vault_id, transaction) {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async createMany(transactions) {
+  async createMany(vault_id, transactions) {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async update(id, transaction) {
+  async update(vault_id, transaction_id, transaction) {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async delete(id) {
+  async delete(vault_id, transaction_id) {
     throw new Error("Not implemented");
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async getByStatus(status) {
-    throw new Error("Not implemented");
-  }
-
-  // eslint-disable-next-line no-unused-vars
-  async approve(id) {
+  async getByStatus(vault_id, status) {
     throw new Error("Not implemented");
   }
 }
@@ -79,75 +73,108 @@ const mockedTransactions = generateMockTransactions();
 
 // In-memory implementation of the repository
 class InMemoryTransactionRepository extends TransactionRepository {
-  constructor(initialTransactions = []) {
+  constructor() {
     super();
-    this.transactions = new Map();
-    this.approvals = new Map();
+    // key is vault_id, value is a Map of transaction_id -> transaction
+    this.vault_transactions = new Map();
 
     if (GlobalSettings.transactions.source === "mock") {
-      initialTransactions = mockedTransactions;
+      // Group mocked transactions by vault_id
+      mockedTransactions.forEach((transaction) => {
+        const vault_id = transaction.vault_id;
+        if (!this.vault_transactions.has(vault_id)) {
+          this.vault_transactions.set(vault_id, new Map());
+        }
+        this.vault_transactions.get(vault_id).set(transaction.id, transaction);
+      });
     }
-
-    initialTransactions.forEach((transaction) =>
-      this.transactions.set(transaction.id, transaction)
-    );
   }
 
   async getAll() {
-    return Array.from(this.transactions.values());
+    const allTransactions = [];
+    for (const transactionMap of this.vault_transactions.values()) {
+      allTransactions.push(...transactionMap.values());
+    }
+    return allTransactions;
+  }
+
+  async getByVaultId(vault_id) {
+    const vaultTransactions = this.vault_transactions.get(vault_id);
+    return vaultTransactions ? Array.from(vaultTransactions.values()) : [];
   }
 
   async getById(id) {
-    return this.transactions.get(id);
+    for (const transactionMap of this.vault_transactions.values()) {
+      const transaction = transactionMap.get(id);
+      if (transaction) return transaction;
+    }
+    return null;
   }
 
-  async create(transaction) {
+  async create(vault_id, transaction) {
     const id = generateMockTransactionId();
     const defaultTraits = generateDefaultTransactionTraits();
 
-    // Simulate creation request to external service (by timing out)
+    // Simulate creation request to external service
     await setTimeout(() => {}, 4000);
 
-    let materializedTransaction = { ...transaction, id, ...defaultTraits };
-    this.transactions.set(id, materializedTransaction);
+    let materializedTransaction = new Transaction({
+      ...transaction,
+      id,
+      vault_id,
+      ...defaultTraits,
+    });
+
+    if (!this.vault_transactions.has(vault_id)) {
+      this.vault_transactions.set(vault_id, new Map());
+    }
+    this.vault_transactions.get(vault_id).set(id, materializedTransaction);
 
     return materializedTransaction;
   }
 
-  async createMany(transactions) {
-    transactions.forEach((transaction) =>
-      this.transactions.set(transaction.id, transaction)
-    );
+  async createMany(vault_id, transactions) {
+    if (!this.vault_transactions.has(vault_id)) {
+      this.vault_transactions.set(vault_id, new Map());
+    }
+
+    transactions.forEach((transaction) => {
+      const materializedTransaction = new Transaction({
+        ...transaction,
+        vault_id,
+      });
+      this.vault_transactions
+        .get(vault_id)
+        .set(transaction.id, materializedTransaction);
+    });
   }
 
-  async update(id, transaction) {
-    if (!this.transactions.has(id)) return null;
-    this.transactions.set(id, { ...transaction, id });
-    return this.transactions.get(id);
+  async update(vault_id, transaction_id, transaction) {
+    const vaultTransactions = this.vault_transactions.get(vault_id);
+    if (!vaultTransactions || !vaultTransactions.has(transaction_id))
+      return null;
+
+    const updatedTransaction = new Transaction({
+      ...transaction,
+      id: transaction_id,
+      vault_id,
+    });
+    vaultTransactions.set(transaction_id, updatedTransaction);
+    return updatedTransaction;
   }
 
-  async delete(id) {
-    return this.transactions.delete(id);
+  async delete(vault_id, transaction_id) {
+    const vaultTransactions = this.vault_transactions.get(vault_id);
+    if (!vaultTransactions) return false;
+    return vaultTransactions.delete(transaction_id);
   }
 
-  async approve(txId) {
-    await setTimeout(() => {}, 4000);
-
-    let currentSigner = getMockedCurrentUser();
-    let signerId = currentSigner.id;
-
-    let existingApprovals = this.approvals.get(txId) || [];
-    let newApprovals = [...existingApprovals, [signerId, true]];
-
-    this.approvals.set(txId, newApprovals);
-
-    return serializeMap(this.approvals);
-  }
-
-  async getByStatus(targetStatus) {
+  async getByStatus(vault_id, targetStatus) {
     if (!["under review", "approved", "rejected"].includes(targetStatus)) {
       throw new Error("Invalid status");
     }
+
+    const vaultTransactions = await this.getByVaultId(vault_id);
 
     function extractByStatus(transactions) {
       switch (targetStatus) {
@@ -169,12 +196,11 @@ class InMemoryTransactionRepository extends TransactionRepository {
           console.warn(
             `Unknown status: ${targetStatus}. Returning all transactions. This could lead to unexpected behaviour.`
           );
-
           return transactions;
       }
     }
 
-    return extractByStatus(this.transactions);
+    return extractByStatus(vaultTransactions);
   }
 }
 

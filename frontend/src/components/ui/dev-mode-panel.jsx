@@ -10,6 +10,8 @@ import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { Avatar } from "@/components/ui/avatar/avatar";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { selectCurrentUserId } from "@/state/session_slice";
+import { fetchSession } from "@/state/session_slice";
+import { getRepository } from "@/constants/module_config";
 
 // Mock sessions for development
 
@@ -25,7 +27,19 @@ export default function DevModePanel() {
 
   const users = useSelector((state) => state.users.users_list);
   const currentUserId = useSelector((state) => selectCurrentUserId(state));
-  const avatarBorderColor = useColorModeValue("black", "white");
+
+  const handleUserClick = (userId) => {
+    // Selected user objects (contains all information)
+    const selectedUser = users.find((u) => u.id === userId);
+    if (!selectedUser) return;
+
+    const sessionRepo = getRepository("session");
+    console.warn("[DEV MODE] Setting session user to.", selectedUser);
+    sessionRepo.user = selectedUser;
+    console.log("Session user", sessionRepo.user);
+
+    dispatch(fetchSession());
+  };
 
   if (!GlobalSettings.dev_mode.enabled) return null;
 
@@ -95,6 +109,7 @@ export default function DevModePanel() {
                               transform: "scale(1.05)",
                             },
                           }}
+                          onClick={() => handleUserClick(user.id)}
                         />
                         {user.id === currentUserId && (
                           <Box

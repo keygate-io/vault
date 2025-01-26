@@ -3,7 +3,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
-import { getApprovalsForTxId } from "@/state/approvals_slice";
+import { getApprovalsForTxId } from "@/state/decisions_slice";
 import { selectCurrentVaultId } from "@/state/session_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectVaultSigners } from "../../state/signers_slice";

@@ -7,8 +7,7 @@ export const fetchSignersForVault = createAsyncThunk(
   "signers/getSigners",
   async (vaultId, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("signers");
-      const repository = new RepositoryType();
+      const repository = getRepository("signers");
       const signers = await repository.getSignersByVaultId(vaultId);
       return {
         vaultId,
@@ -24,8 +23,7 @@ export const addSignerToVault = createAsyncThunk(
   "signers/addSigner",
   async ({ vaultId, signerId }, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("signers");
-      const repository = new RepositoryType();
+      const repository = getRepository("signers");
       const signersMap = await repository.addSignerToWallet(vaultId, signerId);
       return signersMap;
     } catch (error) {
@@ -38,8 +36,7 @@ export const removeSignerFromVault = createAsyncThunk(
   "signers/removeSigner",
   async ({ vaultId, signerId }, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("signers");
-      const repository = new RepositoryType();
+      const repository = getRepository("signers");
       const signersMap = await repository.removeSignerFromWallet(
         vaultId,
         signerId

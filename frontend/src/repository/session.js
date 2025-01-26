@@ -1,22 +1,6 @@
 import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
 import { getMockedCurrentVault } from "@/utils/mockDataGenerator";
 
-export class User {
-  constructor(params = {}) {
-    const { id, name, email, role } = params;
-
-    if (!id || !name || !email || !role) {
-      console.warn(
-        "User initialisation is missing required parameters. This could lead to unexpected behaviour."
-      );
-    }
-
-    this.id = id;
-    this.name = name || "";
-    this.email = email || "";
-    this.role = role || "user";
-  }
-}
 
 // Repository interface (abstract class)
 export class SessionRepository {
@@ -41,20 +25,13 @@ export class SessionRepository {
 class InMemorySessionRepository extends SessionRepository {
   constructor() {
     super();
-    this.user = null;
-    this.vault = null;
+    this.user = getMockedCurrentUser();
+    this.vault = getMockedCurrentVault();
   }
 
   async login() {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Here we would typically validate credentials against a backend
-    // In ICP blockchain, we would use the identity provider to validate credentials
-    // OR we could wait until the user goes through the internet identity flow
-    // OR we could wait until the user goes through the NFID flow
-    this.user = getMockedCurrentUser();
-    this.vault = getMockedCurrentVault();
 
     return {
       user: this.user,

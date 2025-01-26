@@ -26,8 +26,7 @@ export const fetchTransactions = () => {
   return async (dispatch) => {
     dispatch(fetchTransactionsRequest());
     try {
-      const RepositoryType = getRepository("transactions");
-      const repository = new RepositoryType();
+      const repository = getRepository("transactions");
       const transactions = await repository.getAll();
       dispatch(fetchTransactionsSuccess(transactions));
     } catch (error) {
@@ -54,8 +53,7 @@ export const createTransaction = (transactionData) => {
   return async (dispatch) => {
     dispatch(createTransactionRequest());
     try {
-      const RepositoryType = getRepository("transactions");
-      const repository = new RepositoryType();
+      const repository = getRepository("transactions");
       const transaction = await repository.create(transactionData);
       dispatch(createTransactionSuccess(transaction));
     } catch (error) {

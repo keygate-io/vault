@@ -11,11 +11,12 @@ import floatPrecision from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  approveTransaction,
+  recordDecision,
   hasUserApprovedThisTxId,
   selectApprovalsCount,
-} from "@/state/approvals_slice";
+} from "@/state/decisions_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
+import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
 
 const ActionExecuteButton = ({ tx }) => {
   const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
@@ -28,7 +29,7 @@ const ActionExecuteButton = ({ tx }) => {
     <Button
       variant={approvals >= threshold ? "solid" : "outline"}
       colorScheme={approvals >= threshold ? "green" : "blue"}
-      disabled={approvals >= threshold}
+      disabled={approvals < threshold}
       size="xs"
     >
       Execute
@@ -42,14 +43,22 @@ ActionExecuteButton.propTypes = {
 
 const ActionApproveButton = ({ txId }) => {
   const dispatch = useDispatch();
-  const { approveLoading } = useSelector((state) => state.approvals);
-  const currentUser = useSelector((state) => state.session.currentUser);
+  const { decisionsLoading } = useSelector((state) => state.decisions);
+  const currentUser = useSelector((state) => selectCurrentUser(state));
   const _hasUserApprovedThisTxId = useSelector((state) =>
     hasUserApprovedThisTxId(state, txId, currentUser?.id)
   );
 
+  console.log("Debug ActionApproveButton:", {
+    txId,
+    currentUser,
+    decisionsLoading,
+    hasApproved: _hasUserApprovedThisTxId,
+  });
+
   const handleApprove = () => {
-    dispatch(approveTransaction(txId));
+    console.log("Approving transaction:", txId);
+    dispatch(recordDecision({ transactionId: txId, isApproval: true }));
   };
 
   return (
@@ -57,7 +66,7 @@ const ActionApproveButton = ({ txId }) => {
       variant={_hasUserApprovedThisTxId ? "ghost" : "solid"}
       size="xs"
       onClick={handleApprove}
-      isLoading={approveLoading}
+      isLoading={decisionsLoading}
       disabled={_hasUserApprovedThisTxId}
     >
       {_hasUserApprovedThisTxId && (
@@ -70,10 +79,10 @@ const ActionApproveButton = ({ txId }) => {
 
 const TransactionItem = ({ tx }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
+  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
   const threshold = useSelector((state) =>
-    selectVaultThreshold(state, tx.vaultId)
+    selectVaultThreshold(state, currentVaultId)
   );
-
   const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
 
   useEffect(() => {
@@ -116,6 +125,8 @@ const TransactionItem = ({ tx }) => {
       return <CheckCircleIcon color="white" width={20} height={20} />;
     }
 
+    console.log("approvals", approvals);
+    console.log("threshold", threshold);
     if (approvals >= threshold) {
       return <ActionExecuteButton tx={tx} threshold={threshold} />;
     }

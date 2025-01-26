@@ -26,6 +26,10 @@ const GlobalSettings = {
     source: "mock",
     enabled: true,
   },
+  decisions: {
+    source: "mock",
+    enabled: true,
+  },
 };
 
 export { GlobalSettings };

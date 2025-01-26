@@ -6,8 +6,7 @@ export const registerUser = createAsyncThunk(
   "users/register",
   async (userData, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("users");
-      const repository = new RepositoryType();
+      const repository = getRepository("users");
       const user = await repository.register(userData);
       return user;
     } catch (error) {
@@ -20,8 +19,7 @@ export const getAllUsers = createAsyncThunk(
   "users/getAll",
   async (_, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("users");
-      const repository = new RepositoryType();
+      const repository = getRepository("users");
       const users = await repository.getAll();
       return users;
     } catch (error) {
@@ -34,8 +32,7 @@ export const deleteUserById = createAsyncThunk(
   "users/deleteById",
   async (userId, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("users");
-      const repository = new RepositoryType();
+      const repository = getRepository("users");
       await repository.deleteById(userId);
       return userId;
     } catch (error) {
@@ -48,8 +45,7 @@ export const getUserById = createAsyncThunk(
   "users/getById",
   async (userId, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("users");
-      const repository = new RepositoryType();
+      const repository = getRepository("users");
       const user = await repository.getById(userId);
       return user;
     } catch (error) {

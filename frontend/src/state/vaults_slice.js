@@ -7,8 +7,7 @@ export const fetchVaultById = createAsyncThunk(
   "vaults/getVault",
   async (vaultId, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("vaults");
-      const repository = new RepositoryType();
+      const repository = getRepository("vaults");
       const vault = await repository.getById(vaultId);
       return vault;
     } catch (error) {
@@ -21,8 +20,7 @@ export const fetchVaults = createAsyncThunk(
   "vaults/fetchVaults",
   async (_, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("vaults");
-      const repository = new RepositoryType();
+      const repository = getRepository("vaults");
       const vaults = await repository.getAll();
       return vaults;
     } catch (error) {

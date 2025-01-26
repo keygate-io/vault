@@ -12,8 +12,7 @@ export const login = createAsyncThunk(
   "session/login",
   async (_, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("session");
-      const repository = new RepositoryType();
+      const repository = getRepository("session");
       const user = await repository.login();
 
       return user;
@@ -27,9 +26,9 @@ export const fetchSession = createAsyncThunk(
   "session/fetchSession",
   async (_, { rejectWithValue }) => {
     try {
-      const RepositoryType = getRepository("session");
-      const repository = new RepositoryType();
+      const repository = getRepository("session");
       const user = await repository.fetchSession();
+      console.log("Current user", user);
       return user;
     } catch (error) {
       return rejectWithValue(error.message);
