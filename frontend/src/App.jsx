@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "@/state/transactions_actions";
 import { fetchSigners } from "@/state/signers_actions";
 import { fetchVault } from "@/state/vault_actions";
-import { GlobalSettings } from "@/constants/global_config";
+import { Feature } from "@/components/ui/feature";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
@@ -38,18 +38,22 @@ function MultisigWallet() {
   return (
     <Box maxW="1100px" mx="auto" pt={8}>
       <VStack spacing={4} p={4} align="stretch">
-        {GlobalSettings.header.enabled && <Header />}
+        <Feature name="header">
+          <Header />
+        </Feature>
 
-        {GlobalSettings.vault.enabled && (
+        <Feature name="vault">
           <Box mt={4}>
             <BalanceDisplay balance={vault_details.balance} symbol="ICP" />
           </Box>
-        )}
+        </Feature>
 
-        {GlobalSettings.signers.enabled && <Signers signers={signers} />}
+        <Feature name="signers">
+          <Signers signers={signers} />
+        </Feature>
 
-        <VStack spacing={3} align="stretch" mt={8}>
-          {GlobalSettings.transactions.enabled && (
+        <Feature name="transactions">
+          <VStack spacing={3} align="stretch" mt={8}>
             <CollapsibleButton
               content={
                 <HStack spacing={2} align="center">
@@ -64,16 +68,14 @@ function MultisigWallet() {
                 <CreateTransaction onClose={onClose} signers={signers} />
               )}
             </CollapsibleButton>
-          )}
 
-          {GlobalSettings.transactions.enabled && (
             <TransactionsList
               transactions={transactions_list}
               signers={signers}
               threshold={threshold}
             />
-          )}
-        </VStack>
+          </VStack>
+        </Feature>
       </VStack>
       <DevModePanel />
     </Box>

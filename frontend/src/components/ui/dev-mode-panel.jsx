@@ -1,31 +1,27 @@
 import { VStack, HStack, Text, Card, Heading } from "@chakra-ui/react";
 import { GlobalSettings } from "@/constants/global_config";
-import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import Draggable from "react-draggable";
 import { AdjustmentsVerticalIcon } from "@heroicons/react/24/solid";
+import { useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { setFeatureEnabled } from "@/state/config_slice";
 
 export default function DevModePanel() {
-  const [settings, setSettings] = useState({
-    transactions: GlobalSettings.transactions.enabled,
-    signers: GlobalSettings.signers.enabled,
-    vault: GlobalSettings.vault.enabled,
-    header: GlobalSettings.header.enabled,
-  });
+  const nodeRef = useRef(null);
+
+  const dispatch = useDispatch();
+  const config = useSelector((state) => state.config);
 
   const handleToggle = (feature) => {
-    setSettings((prev) => {
-      const newSettings = { ...prev, [feature]: !prev[feature] };
-      GlobalSettings[feature].enabled = newSettings[feature];
-      console.log(GlobalSettings);
-      return newSettings;
-    });
+    console.log("setting feature", feature, "to", !config[feature].enabled);
+    dispatch(setFeatureEnabled({ feature, enabled: !config[feature].enabled }));
   };
 
   if (!GlobalSettings.dev_mode.enabled) return null;
 
   return (
-    <Draggable handle=".drag-handle">
+    <Draggable handle=".drag-handle" nodeRef={nodeRef}>
       <Card.Root
         position="fixed"
         bottom="4"
@@ -37,12 +33,13 @@ export default function DevModePanel() {
           bg: "gray.800",
         }}
         zIndex={100000}
+        ref={nodeRef}
       >
         <Card.Header pb={0} className="drag-handle" cursor="grab">
           <Heading size="xs" fontWeight="normal">
             <HStack>
               <AdjustmentsVerticalIcon width={16} height={16} />
-              <Text>Dev Mode Controls</Text>
+              <Text>Developer Mode</Text>
             </HStack>
           </Heading>
         </Card.Header>
@@ -51,7 +48,7 @@ export default function DevModePanel() {
             <HStack justify="space-between" align="center">
               <Text fontSize="xs">Transactions</Text>
               <Switch
-                isChecked={settings.transactions}
+                checked={config.transactions.enabled}
                 onChange={() => handleToggle("transactions")}
                 size="sm"
               />
@@ -59,7 +56,7 @@ export default function DevModePanel() {
             <HStack justify="space-between" align="center">
               <Text fontSize="xs">Signers</Text>
               <Switch
-                isChecked={settings.signers}
+                checked={config.signers.enabled}
                 onChange={() => handleToggle("signers")}
                 size="sm"
               />
@@ -67,7 +64,7 @@ export default function DevModePanel() {
             <HStack justify="space-between" align="center">
               <Text fontSize="xs">Vault</Text>
               <Switch
-                isChecked={settings.vault}
+                checked={config.vault.enabled}
                 onChange={() => handleToggle("vault")}
                 size="sm"
               />
@@ -75,7 +72,7 @@ export default function DevModePanel() {
             <HStack justify="space-between" align="center">
               <Text fontSize="xs">Header</Text>
               <Switch
-                isChecked={settings.header}
+                checked={config.header.enabled}
                 onChange={() => handleToggle("header")}
                 size="sm"
               />

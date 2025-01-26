@@ -11,11 +11,11 @@ import {
 import floatPrecision from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { approveTransaction } from "@/state/transactions_actions";
-import { makeSelectApprovalsByTxId } from "@/state/transactions_derived";
+import { approveTransaction } from "@/state/approvals_slice";
 const ActionExecuteButton = ({ tx, threshold }) => {
-  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
-  const approvals = useSelector((state) => selectApprovalsByTxId(state, tx.id));
+  const approvals = useSelector(
+    (state) => state.approvals.approvals_map[tx.id]
+  );
 
   return (
     <Button
@@ -36,7 +36,7 @@ ActionExecuteButton.propTypes = {
 
 const ActionApproveButton = ({ txId }) => {
   const dispatch = useDispatch();
-  const { approveLoading } = useSelector((state) => state);
+  const { approveLoading } = useSelector((state) => state.approvals);
 
   const handleApprove = () => {
     console.log("approving transaction", txId);
@@ -58,8 +58,9 @@ const ActionApproveButton = ({ txId }) => {
 
 const TransactionItem = ({ tx, signers, threshold }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
-  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
-  const approvals = useSelector((state) => selectApprovalsByTxId(state, tx.id));
+  const approvals = useSelector(
+    (state) => state.approvals.approvals_map[tx.id]
+  );
 
   useEffect(() => {
     if (tx.isSuccessful) {

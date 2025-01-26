@@ -5,16 +5,12 @@ import {
   CREATE_TRANSACTION_REQUEST,
   CREATE_TRANSACTION_SUCCESS,
   CREATE_TRANSACTION_FAILURE,
-  APPROVE_TRANSACTION_REQUEST,
-  APPROVE_TRANSACTION_SUCCESS,
-  APPROVE_TRANSACTION_FAILURE,
 } from "@/state/transactions_actions";
 
 const initialState = {
   transactions_list: [],
   fetchLoading: false,
   createLoading: false,
-  approveLoading: false,
   error: null,
 };
 
@@ -54,27 +50,6 @@ const transactionsReducer = (state = initialState, action) => {
       return {
         ...state,
         createLoading: false,
-        error: action.payload,
-      };
-    case APPROVE_TRANSACTION_REQUEST:
-      return {
-        ...state,
-        approveLoading: true,
-        error: null,
-      };
-    case APPROVE_TRANSACTION_SUCCESS:
-      return {
-        ...state,
-        transactions: state.transactions_list.map((tx) =>
-          tx.id === action.payload.id ? action.payload : tx
-        ),
-        approveLoading: false,
-        error: null,
-      };
-    case APPROVE_TRANSACTION_FAILURE:
-      return {
-        ...state,
-        approveLoading: false,
         error: action.payload,
       };
     default:

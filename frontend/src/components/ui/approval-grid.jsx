@@ -3,7 +3,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
-import { makeSelectApprovalsByTxId } from "@/state/transactions_derived";
 import { useEffect } from "react";
 
 export function ApprovalGrid({
@@ -17,8 +16,7 @@ export function ApprovalGrid({
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
 
-  const selectApprovalsByTxId = makeSelectApprovalsByTxId();
-  const approvals = useSelector((state) => selectApprovalsByTxId(state, txId));
+  const approvals = useSelector((state) => state.approvals.approvals_map[txId]);
 
   useEffect(() => {
     console.log("approvals for txId", txId, approvals);
