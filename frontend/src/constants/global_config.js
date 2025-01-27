@@ -30,6 +30,9 @@ const GlobalSettings = {
     source: "mock",
     enabled: true,
   },
+  demo: {
+    enabled: false,
+  },
 };
 
 export { GlobalSettings };
