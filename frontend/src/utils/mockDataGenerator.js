@@ -106,8 +106,7 @@ let mockedCurrentUser = {
   id: 1,
   name: "Travis",
   address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
-  avatarUrl:
-    "https://static.wikia.nocookie.net/charactercommunity/images/3/32/Piplup_%28Pokémon%29.png",
+  avatarUrl: faker.image.avatarGitHub(),
 };
 
 export function getMockedCurrentUser() {
