@@ -31,7 +31,7 @@ const SourceToRepository = {
 
 const getRepository = (module) => {
   if (!SingletonRepositories[module]) {
-    const source = GlobalSettings.dev_mode.enabled ? "mock" : "api";
+    const source = GlobalSettings[module].enabled ? "mock" : "api";
     const Repository = SourceToRepository[module]?.[source];
 
     if (!Repository) {

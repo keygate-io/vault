@@ -17,19 +17,30 @@ import {
 } from "@/state/decisions_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
+import { selectVaultSigners } from "@/state/signers_slice";
 
 const ActionExecuteButton = ({ tx }) => {
-  const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
+  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+
+  const approvals = useSelector((state) =>
+    selectApprovalsCount(state, currentVaultId, tx.id)
+  );
 
   const threshold = useSelector((state) =>
-    selectVaultThreshold(state, tx.vaultId)
+    selectVaultThreshold(state, currentVaultId)
   );
+
+  const signers = useSelector((state) =>
+    selectVaultSigners(state, currentVaultId)
+  );
+
+  const adjustedThreshold = Math.min(threshold, signers.length);
 
   return (
     <Button
-      variant={approvals >= threshold ? "solid" : "outline"}
-      colorScheme={approvals >= threshold ? "green" : "blue"}
-      disabled={approvals < threshold}
+      variant={approvals >= adjustedThreshold ? "solid" : "outline"}
+      colorScheme={approvals >= adjustedThreshold ? "green" : "blue"}
+      disabled={approvals < adjustedThreshold}
       size="xs"
     >
       Execute
@@ -41,38 +52,45 @@ ActionExecuteButton.propTypes = {
   tx: PropTypes.object.isRequired,
 };
 
-const ActionApproveButton = ({ txId }) => {
+const ActionApproveButton = ({ txId, vaultId }) => {
   const dispatch = useDispatch();
   const { decisionsLoading } = useSelector((state) => state.decisions);
   const currentUser = useSelector((state) => selectCurrentUser(state));
-  const _hasUserApprovedThisTxId = useSelector((state) =>
-    hasUserApprovedThisTxId(state, txId, currentUser?.id)
+  const hasApproved = useSelector((state) =>
+    hasUserApprovedThisTxId(state, vaultId, txId, currentUser?.id)
   );
 
-  console.log("Debug ActionApproveButton:", {
-    txId,
-    currentUser,
-    decisionsLoading,
-    hasApproved: _hasUserApprovedThisTxId,
-  });
-
   const handleApprove = () => {
-    console.log("Approving transaction:", txId);
-    dispatch(recordDecision({ transactionId: txId, isApproval: true }));
+    dispatch(
+      recordDecision({
+        vaultId,
+        transactionId: txId,
+        isApproval: true,
+      })
+    );
   };
+
+  if (hasApproved) {
+    return (
+      <Button variant="ghost" size="xs" disabled>
+        <CheckCircleIcon color="green" width={12} height={12} />
+        Approved
+      </Button>
+    );
+  }
 
   return (
     <Button
-      variant={_hasUserApprovedThisTxId ? "ghost" : "solid"}
+      variant="solid"
       size="xs"
       onClick={handleApprove}
       isLoading={decisionsLoading}
-      disabled={_hasUserApprovedThisTxId}
+      disabled={decisionsLoading}
+      loadingText="Approving..."
+      loading={decisionsLoading}
+      pr={4}
     >
-      {_hasUserApprovedThisTxId && (
-        <CheckCircleIcon color="green" width={12} height={12} />
-      )}
-      {_hasUserApprovedThisTxId ? "Approved." : "Approve"}
+      Approve
     </Button>
   );
 };
@@ -80,10 +98,17 @@ const ActionApproveButton = ({ txId }) => {
 const TransactionItem = ({ tx }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const signers = useSelector((state) =>
+    selectVaultSigners(state, currentVaultId)
+  );
   const threshold = useSelector((state) =>
     selectVaultThreshold(state, currentVaultId)
   );
-  const approvals = useSelector((state) => selectApprovalsCount(state, tx.id));
+  const approvals = useSelector((state) =>
+    selectApprovalsCount(state, currentVaultId, tx.id)
+  );
+
+  const adjustedThreshold = Math.min(threshold, signers.length);
 
   useEffect(() => {
     if (tx.isSuccessful) {
@@ -125,13 +150,11 @@ const TransactionItem = ({ tx }) => {
       return <CheckCircleIcon color="white" width={20} height={20} />;
     }
 
-    console.log("approvals", approvals);
-    console.log("threshold", threshold);
-    if (approvals >= threshold) {
-      return <ActionExecuteButton tx={tx} threshold={threshold} />;
+    if (approvals >= adjustedThreshold) {
+      return <ActionExecuteButton tx={tx} />;
     }
 
-    return <ActionApproveButton txId={tx.id} />;
+    return <ActionApproveButton vaultId={currentVaultId} txId={tx.id} />;
   }
 
   function conditionallyRenderApprovalGrid() {

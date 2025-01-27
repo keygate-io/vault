@@ -1,55 +1,50 @@
-import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
-import { GlobalSettings } from "@/constants/global_config";
-
-// Repository interface
-export class DecisionRepository {
+// Repository interface, abstract class
+class DecisionRepository {
   async getAll() {
     throw new Error("Not implemented");
   }
 
-  async getByTransactionId(txId) {
+  async getByTransactionId(vaultId, txId) {
     throw new Error("Not implemented");
   }
 
-  async recordDecision(txId, isApproval) {
+  async recordDecision(vaultId, txId, decision, userId) {
     throw new Error("Not implemented");
   }
-}
-
-function serializeMap(map) {
-  const obj = {};
-  for (const [key, value] of map.entries()) {
-    obj[key] = value;
-  }
-  return obj;
 }
 
 // In-memory implementation
 export class InMemoryDecisionRepository extends DecisionRepository {
   constructor() {
     super();
-    this.decisions = new Map();
+    // Structure: { [vaultId]: { [txId]: Array<[userId, isApproval]> } }
+    this.decisions = {};
   }
 
   async getAll() {
-    return serializeMap(this.decisions);
+    return this.decisions;
   }
 
-  async getByTransactionId(txId) {
-    return this.decisions.get(txId) || [];
+  async getByTransactionId(vaultId, txId) {
+    return this.decisions[vaultId]?.[txId] || [];
   }
 
-  async recordDecision(txId, isApproval = true) {
-    await setTimeout(() => {}, 2000); // Simulate network delay
+  async recordDecision(vaultId, txId, decision, userId) {
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate network delay
 
-    let currentSigner = getMockedCurrentUser();
-    let signerId = currentSigner.id;
+    // Initialize vault if not exists
+    if (!this.decisions[vaultId]) {
+      this.decisions[vaultId] = {};
+    }
 
-    let existingDecisions = this.decisions.get(txId) || [];
-    let newDecisions = [...existingDecisions, [signerId, isApproval]];
+    // Initialize transaction array if not exists
+    if (!this.decisions[vaultId][txId]) {
+      this.decisions[vaultId][txId] = [];
+    }
 
-    this.decisions.set(txId, newDecisions);
+    // Add new decision
+    this.decisions[vaultId][txId].push([userId, decision]);
 
-    return serializeMap(this.decisions);
+    return structuredClone(this.decisions); // Return cloned state to avoid reference issues
   }
 }

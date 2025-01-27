@@ -17,11 +17,14 @@ import { fetchVaultById } from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
 import { fetchSession } from "@/state/session_slice";
 import { fetchVaults } from "@/state/vaults_slice";
+import { selectCurrentUser } from "@/state/session_slice";
+import { fetchDecisions } from "@/state/decisions_slice";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions_list } = useSelector((state) => state.transactions);
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const currentUser = useSelector((state) => selectCurrentUser(state));
 
   useEffect(() => {
     // CORE: First, we login
@@ -43,6 +46,10 @@ function MultisigWallet() {
       dispatch(fetchSignersForVault(currentVaultId));
     }
   }, [currentVaultId, dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchDecisions());
+  }, [currentUser]);
 
   return (
     <Box maxW="1100px" mx="auto" pt={8}>

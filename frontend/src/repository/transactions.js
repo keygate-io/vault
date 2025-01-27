@@ -66,6 +66,10 @@ export class TransactionRepository {
   async getByStatus(vault_id, status) {
     throw new Error("Not implemented");
   }
+
+  async execute(vault_id, transaction_id) {
+    throw new Error("Not implemented");
+  }
 }
 
 // Prepare mocked transactions
@@ -167,6 +171,17 @@ class InMemoryTransactionRepository extends TransactionRepository {
     const vaultTransactions = this.vault_transactions.get(vault_id);
     if (!vaultTransactions) return false;
     return vaultTransactions.delete(transaction_id);
+  }
+
+  async execute(vault_id, transaction_id) {
+    const vaultTransactions = this.vault_transactions.get(vault_id);
+    if (!vaultTransactions) return false;
+
+    const transaction = vaultTransactions.get(transaction_id);
+    if (!transaction) return false;
+
+    transaction.isExecuted = true;
+    return true;
   }
 
   async getByStatus(vault_id, targetStatus) {

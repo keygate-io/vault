@@ -3,17 +3,21 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
-import { getApprovalsForTxId } from "@/state/decisions_slice";
+import { selectApprovalsCount } from "@/state/decisions_slice";
 import { selectCurrentVaultId } from "@/state/session_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectVaultSigners } from "../../state/signers_slice";
+import { GlobalSettings } from "@/constants/global_config";
+import { useEffect } from "react";
 
 export function ApprovalGrid({ txId, ...props }) {
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
-  const approvals = useSelector((state) => getApprovalsForTxId(state, txId));
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const approvals = useSelector((state) =>
+    selectApprovalsCount(state, currentVaultId, txId)
+  );
   const threshold = useSelector((state) =>
     selectVaultThreshold(state, currentVaultId)
   );
@@ -77,6 +81,11 @@ export function ApprovalGrid({ txId, ...props }) {
       {...props}
       mb="24px"
     >
+      <Text
+        visibility={GlobalSettings["dev_mode"].enabled ? "visible" : "hidden"}
+      >
+        {approvals}/{adjustedThreshold}
+      </Text>
       <HStack spacing={1} position="relative">
         {elements}
       </HStack>

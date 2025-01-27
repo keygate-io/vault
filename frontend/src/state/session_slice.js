@@ -28,7 +28,6 @@ export const fetchSession = createAsyncThunk(
     try {
       const repository = getRepository("session");
       const user = await repository.fetchSession();
-      console.log("Current user", user);
       return user;
     } catch (error) {
       return rejectWithValue(error.message);

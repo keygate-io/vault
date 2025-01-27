@@ -8,13 +8,11 @@ import { useSelector, useDispatch } from "react-redux";
 import { setFeatureEnabled } from "@/state/config_slice";
 import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { Avatar } from "@/components/ui/avatar/avatar";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { selectCurrentUserId } from "@/state/session_slice";
 import { fetchSession } from "@/state/session_slice";
 import { getRepository } from "@/constants/module_config";
 
 // Mock sessions for development
-
 export default function DevModePanel() {
   const nodeRef = useRef(null);
 
