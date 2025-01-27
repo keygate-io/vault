@@ -60,7 +60,7 @@ export default function DevModePanel() {
           <Heading size="xs" fontWeight="normal">
             <HStack>
               <AdjustmentsVerticalIcon width={16} height={16} />
-              <Text>Developer Mode</Text>
+              <Text>Playground Mode</Text>
             </HStack>
           </Heading>
         </Card.Header>

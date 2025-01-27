@@ -33,6 +33,9 @@ const GlobalSettings = {
   demo: {
     enabled: false,
   },
+  pilot_program_invitation: {
+    enabled: true,
+  },
 };
 
 export { GlobalSettings };

@@ -3,6 +3,7 @@ import { ColorModeButton, useColorMode } from "@/components/ui/color-mode";
 import { Feature } from "@/components/ui/feature";
 import { DemoModal } from "./demo-modal";
 import { useState } from "react";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 export default function Header() {
   const { colorMode } = useColorMode();
@@ -30,6 +31,18 @@ export default function Header() {
           Need help? Check out this demo!
         </Link>
         <DemoModal isOpen={open} onClose={() => setOpen(false)} />
+      </Feature>
+      <Feature name="pilot_program_invitation">
+        <Link
+          fontSize="sm"
+          color="gray.500"
+          target="_blank"
+          href="https://forms.gle/sQohBRUggamLHkWZ7"
+          cursor="pointer"
+        >
+          Join the pilot program.{" "}
+          <ArrowTopRightOnSquareIcon width={12} height={12} />
+        </Link>
       </Feature>
     </VStack>
   );
