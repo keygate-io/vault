@@ -4,6 +4,7 @@ import { Feature } from "@/components/ui/feature";
 import { DemoModal } from "./demo-modal";
 import { useState } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { PopupButton } from "@typeform/embed-react";
 
 export default function Header() {
   const { colorMode } = useColorMode();
@@ -33,16 +34,16 @@ export default function Header() {
         <DemoModal isOpen={open} onClose={() => setOpen(false)} />
       </Feature>
       <Feature name="pilot_program_invitation">
-        <Link
-          fontSize="sm"
-          color="gray.500"
-          target="_blank"
-          href="https://forms.gle/sQohBRUggamLHkWZ7"
-          cursor="pointer"
+        <PopupButton
+          id="bBhbKWsG"
+          style={{ fontSize: 20 }}
+          className="my-button"
         >
-          Join the pilot program.{" "}
-          <ArrowTopRightOnSquareIcon width={12} height={12} />
-        </Link>
+          <Link fontSize="sm" color="gray.500" target="_blank" cursor="pointer">
+            Join our pilot program.{" "}
+            <ArrowTopRightOnSquareIcon width={12} height={12} />
+          </Link>
+        </PopupButton>
       </Feature>
     </VStack>
   );
