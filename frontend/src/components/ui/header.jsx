@@ -38,6 +38,7 @@ export default function Header() {
           id="bBhbKWsG"
           style={{ fontSize: 20 }}
           className="my-button"
+          enableSandbox={true}
         >
           <Link fontSize="sm" color="gray.500" target="_blank" cursor="pointer">
             Join our pilot program.{" "}
