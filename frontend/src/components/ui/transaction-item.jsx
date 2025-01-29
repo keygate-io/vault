@@ -53,6 +53,7 @@ const ActionExecuteButton = ({ tx }) => {
     dispatch(
       executeTransaction({ vaultId: currentVaultId, transactionId: tx.id })
     );
+
   };
 
   return (
@@ -155,6 +156,11 @@ const TransactionItem = ({ tx }) => {
     }
   }, [tx.isSuccessful]);
 
+  useEffect(() => {
+    // Issue is that: this is returning 1,true,10,true,9,true
+    console.log(`Found approvals (userId[]): ${approversUserId}`);
+  }, [approversUserId]);
+
   function conditionallyRenderActionButton() {
     if (tx.isExecuted) {
       return;
@@ -189,20 +195,21 @@ const TransactionItem = ({ tx }) => {
               content={tx.isSuccessful ? "Success" : "Pending"}
               sentiment={derivedSentimentColor}
             />
-            <Text>
-              Approved by ({approvers.length}): [{approversUserId.length}].
-              Transaction id is {tx.id}
-            </Text>
-            <AvatarGroup>
-              {approvers.map((approver) => (
-                <Avatar
-                  key={approver.id}
-                  name={approver.name}
-                  src={approver.avatar}
-                  fallback={approver.name[0]}
-                />
-              ))}
-            </AvatarGroup>
+            {
+              tx.isExecuted && (
+                <AvatarGroup>
+                {approvers.map((approver) => (
+                  <Avatar
+                    key={approver.id}
+                    name={approver.name}
+                    src={approver.avatarUrl}
+                    fallback={approver.name[0]}
+                  />
+                ))}
+                </AvatarGroup>
+              )
+            }
+
           </HStack>
         </VStack>
         <VStack align="flex-end">

@@ -164,7 +164,9 @@ export const selectApprovers = createSelector(
   [selectDecisionsForTx],
   (decisions) => {
     console.log("selectApprovers - input decisions:", decisions);
-    const approvers = decisions.filter((decision) => decision[1] === true);
+    const approvers = decisions
+      .filter((decision) => decision[1] === true)
+      .map((decision) => decision[0]);
     console.log("selectApprovers - filtered approvers:", approvers);
     return approvers;
   }
