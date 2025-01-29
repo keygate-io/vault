@@ -14,12 +14,19 @@ import {
   recordDecision,
   hasUserApprovedThisTxId,
   selectApprovalsCount,
+  isTransactionLoading,
 } from "@/state/decisions_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
 import { selectVaultSigners } from "@/state/signers_slice";
+import {
+  executeTransaction,
+  isExecutionLoading,
+} from "@/state/transactions_slice";
+import { toaster } from "@/components/ui/toaster";
 
 const ActionExecuteButton = ({ tx }) => {
+  const dispatch = useDispatch();
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
 
   const approvals = useSelector((state) =>
@@ -36,12 +43,23 @@ const ActionExecuteButton = ({ tx }) => {
 
   const adjustedThreshold = Math.min(threshold, signers.length);
 
+  const isExecuting = useSelector((state) => isExecutionLoading(state, tx.id));
+
+  const handleExecute = () => {
+    dispatch(
+      executeTransaction({ vaultId: currentVaultId, transactionId: tx.id })
+    );
+  };
+
   return (
     <Button
       variant={approvals >= adjustedThreshold ? "solid" : "outline"}
       colorScheme={approvals >= adjustedThreshold ? "green" : "blue"}
-      disabled={approvals < adjustedThreshold}
+      disabled={approvals < adjustedThreshold || isExecuting}
       size="xs"
+      onClick={handleExecute}
+      loading={isExecuting}
+      loadingText="Executing..."
     >
       Execute
     </Button>
@@ -54,7 +72,7 @@ ActionExecuteButton.propTypes = {
 
 const ActionApproveButton = ({ txId, vaultId }) => {
   const dispatch = useDispatch();
-  const { decisionsLoading } = useSelector((state) => state.decisions);
+  const isLoading = useSelector((state) => isTransactionLoading(state, txId));
   const currentUser = useSelector((state) => selectCurrentUser(state));
   const hasApproved = useSelector((state) =>
     hasUserApprovedThisTxId(state, vaultId, txId, currentUser?.id)
@@ -84,10 +102,10 @@ const ActionApproveButton = ({ txId, vaultId }) => {
       variant="solid"
       size="xs"
       onClick={handleApprove}
-      isLoading={decisionsLoading}
-      disabled={decisionsLoading}
+      isLoading={isLoading}
+      disabled={isLoading}
       loadingText="Approving..."
-      loading={decisionsLoading}
+      loading={isLoading}
       pr={4}
     >
       Approve

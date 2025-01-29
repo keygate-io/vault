@@ -9,7 +9,7 @@ import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
 import DevModePanel from "@/components/ui/dev-mode-panel";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTransactions } from "@/state/transactions_actions";
+import { fetchTransactions } from "@/state/transactions_slice";
 import { getAllUsers } from "@/state/users_slice";
 import { login, selectCurrentVaultId } from "@/state/session_slice";
 import { Feature } from "@/components/ui/feature";
@@ -19,7 +19,7 @@ import { fetchSession } from "@/state/session_slice";
 import { fetchVaults } from "@/state/vaults_slice";
 import { selectCurrentUser } from "@/state/session_slice";
 import { fetchDecisions } from "@/state/decisions_slice";
-
+import { Toaster } from "@/components/ui/toaster";
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions_list } = useSelector((state) => state.transactions);
@@ -29,8 +29,6 @@ function MultisigWallet() {
   useEffect(() => {
     // CORE: First, we login
     dispatch(login());
-    // CORE: Then, we fetch the transactions
-    dispatch(fetchTransactions());
     // CORE: We get all the vaults
     dispatch(fetchVaults());
     // CORE: Then, we fetch the session
@@ -43,6 +41,7 @@ function MultisigWallet() {
   useEffect(() => {
     if (currentVaultId) {
       dispatch(fetchVaultById(currentVaultId));
+      dispatch(fetchTransactions(currentVaultId));
       dispatch(fetchSignersForVault(currentVaultId));
     }
   }, [currentVaultId, dispatch]);
@@ -88,6 +87,7 @@ function MultisigWallet() {
         </Feature>
       </VStack>
       <DevModePanel />
+      <Toaster />
     </Box>
   );
 }

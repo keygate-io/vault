@@ -9,11 +9,11 @@ export function generateDefaultTransactionTraits() {
 }
 
 export function generateMockTransactions() {
-  const minimumSuccessful = 1;
-  const minimumExecuted = 1;
-  const minimumFailed = 1;
-  const minimumPending = 1;
-  const maximumTransactions = 5;
+  const minimumSuccessful = 100;
+  const minimumExecuted = 100;
+  const minimumFailed = 100;
+  const minimumPending = 100;
+  const maximumTransactions = 1000;
   const count = faker.number.int({
     min: minimumSuccessful + minimumExecuted + minimumFailed,
     max: maximumTransactions,
@@ -215,4 +215,12 @@ let mockedCurrentVault = {
 
 export function getMockedCurrentVault() {
   return mockedCurrentVault;
+}
+
+export function getRandomMockedVaultId() {
+  const vaults = generateMockVaults();
+  if (vaults.length === 0) {
+    return null;
+  }
+  return vaults[faker.number.int({ min: 0, max: vaults.length - 1 })].id;
 }

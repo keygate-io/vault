@@ -25,7 +25,6 @@ export const recordDecision = createAsyncThunk(
   ) => {
     try {
       const state = getState();
-      console.log("state", state);
       const userId = state.session.user?.id;
 
       if (!userId) {
@@ -69,7 +68,7 @@ export const recordDecision = createAsyncThunk(
 // Initial state and slice setup remains the same
 const initialState = {
   decisions_map: {},
-  decisionsLoading: false,
+  loadingTxIds: {}, // Map of txIds that are currently loading
   error: null,
 };
 
@@ -79,14 +78,15 @@ export const decisionsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // ... existing fetchDecisions cases
-      .addCase(recordDecision.pending, (state) => {
-        state.decisionsLoading = true;
+      .addCase(recordDecision.pending, (state, action) => {
+        const { transactionId } = action.meta.arg;
+        state.loadingTxIds[transactionId] = true;
         state.error = null;
       })
       .addCase(recordDecision.fulfilled, (state, action) => {
-        state.decisionsLoading = false;
-        state.error = null;
         const { vaultId, txId, decisions } = action.payload;
+        delete state.loadingTxIds[txId];
+        state.error = null;
 
         if (!state.decisions_map[vaultId]) {
           state.decisions_map[vaultId] = {};
@@ -95,8 +95,9 @@ export const decisionsSlice = createSlice({
         state.decisions_map[vaultId][txId] = decisions;
       })
       .addCase(recordDecision.rejected, (state, action) => {
+        const { transactionId } = action.meta.arg;
         console.warn("Could not record decision", action.payload);
-        state.decisionsLoading = false;
+        delete state.loadingTxIds[transactionId];
         state.error = action.payload;
       });
   },
@@ -134,6 +135,12 @@ export const hasUserApprovedThisTxId = createSelector(
     const userDecision = decisions.find((decision) => decision[0] === userId);
     return userDecision ? userDecision[1] === true : false;
   }
+);
+
+// Add a new selector to check if a specific transaction is loading
+export const isTransactionLoading = createSelector(
+  [selectDecisionsState, (_, txId) => txId],
+  (decisionsState, txId) => Boolean(decisionsState.loadingTxIds[txId])
 );
 
 export const { reducer: decisionsReducer } = decisionsSlice;

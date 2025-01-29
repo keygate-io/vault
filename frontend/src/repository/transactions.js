@@ -4,38 +4,25 @@ import {
   generateMockTransactions,
   generateDefaultTransactionTraits,
 } from "@/utils/mockDataGenerator";
+import { getRandomMockedVaultId } from "../utils/mockDataGenerator";
 
-// @SuppressWarnings("javascript:S2094")
-export class Transaction {
-  constructor(params = {}) {
-    const { id, recipient, amount, isSuccessful, isExecuted, vault_id } =
-      params;
+// Helper function to create a transaction object
+export function createTransaction(params = {}) {
+  const { id, recipient, amount, isSuccessful, isExecuted, vault_id } = params;
 
-    if (
-      !id ||
-      !recipient ||
-      !vault_id ||
-      isSuccessful === undefined ||
-      isExecuted === undefined ||
-      amount === undefined
-    ) {
-      console.warn(
-        "Transaction initialisation is missing required parameters. This could lead to unexpected behaviour."
-      );
-    }
-
-    this.id = id;
-    this.vault_id = vault_id;
-    this.recipient = recipient || "";
-    this.amount = amount || 0;
-    this.isExecuted = isExecuted || false;
-    this.isSuccessful = isSuccessful || false;
-  }
+  return {
+    id: id,
+    vault_id: vault_id,
+    recipient: recipient || "",
+    amount: amount || 0,
+    isExecuted: isExecuted || false,
+    isSuccessful: isSuccessful || false,
+  };
 }
 
 // Repository interface (abstract class)
 export class TransactionRepository {
-  async getAll() {
+  async getAll(vault_id) {
     throw new Error("Not implemented");
   }
 
@@ -43,7 +30,7 @@ export class TransactionRepository {
     throw new Error("Not implemented");
   }
 
-  async getById(id) {
+  async getById(vault_id, id) {
     throw new Error("Not implemented");
   }
 
@@ -79,143 +66,106 @@ const mockedTransactions = generateMockTransactions();
 class InMemoryTransactionRepository extends TransactionRepository {
   constructor() {
     super();
-    // key is vault_id, value is a Map of transaction_id -> transaction
-    this.vault_transactions = new Map();
-
+    this.transactions = {}; // Object: vaultId -> transactionId -> Transaction
     if (GlobalSettings.transactions.source === "mock") {
-      // Group mocked transactions by vault_id
       mockedTransactions.forEach((transaction) => {
-        const vault_id = transaction.vault_id;
-        if (!this.vault_transactions.has(vault_id)) {
-          this.vault_transactions.set(vault_id, new Map());
-        }
-        this.vault_transactions.get(vault_id).set(transaction.id, transaction);
+        const tx = createTransaction(transaction);
+        const vaultId = getRandomMockedVaultId();
+        this.transactions[vaultId] = {
+          ...this.transactions[vaultId],
+          [transaction.id]: tx,
+        };
       });
     }
   }
 
-  async getAll() {
-    const allTransactions = [];
-    for (const transactionMap of this.vault_transactions.values()) {
-      allTransactions.push(...transactionMap.values());
-    }
-    return allTransactions;
+  async getAllTxsForVaultId(vault_id) {
+    const txs = Object.values(this.transactions[vault_id] || {});
+    return txs;
   }
 
-  async getByVaultId(vault_id) {
-    const vaultTransactions = this.vault_transactions.get(vault_id);
-    return vaultTransactions ? Array.from(vaultTransactions.values()) : [];
-  }
-
-  async getById(id) {
-    for (const transactionMap of this.vault_transactions.values()) {
-      const transaction = transactionMap.get(id);
-      if (transaction) return transaction;
-    }
-    return null;
+  async getById(vault_id, id) {
+    return this.transactions[vault_id][id] || null;
   }
 
   async create(vault_id, transaction) {
+    await new Promise((resolve) => setTimeout(resolve, 4000));
     const id = generateMockTransactionId();
     const defaultTraits = generateDefaultTransactionTraits();
-
-    // Simulate creation request to external service
-    await setTimeout(() => {}, 4000);
-
-    let materializedTransaction = new Transaction({
+    const newTx = createTransaction({
       ...transaction,
       id,
-      vault_id,
+      vault_id: vault_id,
       ...defaultTraits,
     });
-
-    if (!this.vault_transactions.has(vault_id)) {
-      this.vault_transactions.set(vault_id, new Map());
-    }
-    this.vault_transactions.get(vault_id).set(id, materializedTransaction);
-
-    return materializedTransaction;
+    this.transactions[vault_id][id] = newTx;
+    return newTx;
   }
 
   async createMany(vault_id, transactions) {
-    if (!this.vault_transactions.has(vault_id)) {
-      this.vault_transactions.set(vault_id, new Map());
-    }
-
-    transactions.forEach((transaction) => {
-      const materializedTransaction = new Transaction({
-        ...transaction,
-        vault_id,
+    transactions.forEach((tx) => {
+      this.transactions[vault_id][tx.id] = createTransaction({
+        ...tx,
+        vault_id: vault_id,
       });
-      this.vault_transactions
-        .get(vault_id)
-        .set(transaction.id, materializedTransaction);
     });
+    return transactions.map((tx) => this.transactions[tx.id]);
   }
 
-  async update(vault_id, transaction_id, transaction) {
-    const vaultTransactions = this.vault_transactions.get(vault_id);
-    if (!vaultTransactions || !vaultTransactions.has(transaction_id))
-      return null;
-
-    const updatedTransaction = new Transaction({
+  async update(vaultId, txId, transaction) {
+    const currentTx = this.transactions[txId];
+    if (!currentTx || currentTx.vault_id !== vaultId) return null;
+    const updatedTx = createTransaction({
+      ...currentTx,
       ...transaction,
-      id: transaction_id,
-      vault_id,
+      vault_id: currentTx.vault_id,
+      id: txId,
     });
-    vaultTransactions.set(transaction_id, updatedTransaction);
-    return updatedTransaction;
+    this.transactions[txId] = updatedTx;
+    return updatedTx;
   }
 
-  async delete(vault_id, transaction_id) {
-    const vaultTransactions = this.vault_transactions.get(vault_id);
-    if (!vaultTransactions) return false;
-    return vaultTransactions.delete(transaction_id);
-  }
-
-  async execute(vault_id, transaction_id) {
-    const vaultTransactions = this.vault_transactions.get(vault_id);
-    if (!vaultTransactions) return false;
-
-    const transaction = vaultTransactions.get(transaction_id);
-    if (!transaction) return false;
-
-    transaction.isExecuted = true;
+  async delete(vaultId, txId) {
+    const tx = this.transactions[txId];
+    if (!tx || tx.vault_id !== vaultId) return false;
+    delete this.transactions[txId];
     return true;
   }
 
-  async getByStatus(vault_id, targetStatus) {
-    if (!["under review", "approved", "rejected"].includes(targetStatus)) {
+  async execute(vault_id, tx_id) {
+    const tx = this.transactions[vault_id][tx_id];
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    this.transactions[vault_id][tx_id] = {
+      ...tx,
+      isExecuted: true,
+      isSuccessful: true,
+    };
+
+    return this.transactions[vault_id][tx_id];
+  }
+
+  async getByStatus(vault_id, status) {
+    const validStatuses = ["pending", "executed", "failed"];
+    if (!validStatuses.includes(status)) {
       throw new Error("Invalid status");
     }
 
-    const vaultTransactions = await this.getByVaultId(vault_id);
-
-    function extractByStatus(transactions) {
-      switch (targetStatus) {
-        case "pending":
-          return transactions.filter(
-            (transaction) => transaction.isExecuted === false
-          );
-        case "executed":
-          return transactions.filter(
-            (transaction) =>
-              transaction.isExecuted === true &&
-              transaction.isSuccessful === true
-          );
-        case "failed":
-          return transactions.filter(
-            (transaction) => transaction.isSuccessful === false
-          );
-        default:
-          console.warn(
-            `Unknown status: ${targetStatus}. Returning all transactions. This could lead to unexpected behaviour.`
-          );
-          return transactions;
-      }
-    }
-
-    return extractByStatus(vaultTransactions);
+    return Object.values(this.transactions)
+      .filter((tx) => tx.vault_id === vault_id)
+      .filter((tx) => {
+        switch (status) {
+          case "pending":
+            return !tx.isExecuted;
+          case "executed":
+            return tx.isExecuted && tx.isSuccessful;
+          case "failed":
+            return !tx.isSuccessful;
+          default:
+            return false;
+        }
+      });
   }
 }
 

@@ -8,7 +8,7 @@ import { ClockIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { InputGroup } from "@/components/ui/input-group";
 import { useDispatch } from "react-redux";
-import { createTransaction } from "@/state/transactions_actions";
+import { createTransaction } from "@/state/transactions_slice";
 import { Field } from "@/components/ui/field";
 import { isValidPrincipal } from "@/utils/cryptoAddressFormats";
 import { isValidAccountIdentifier } from "@/utils/cryptoAddressFormats";

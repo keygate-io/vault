@@ -32,9 +32,7 @@ export default function DevModePanel() {
     if (!selectedUser) return;
 
     const sessionRepo = getRepository("session");
-    console.warn("[DEV MODE] Setting session user to.", selectedUser);
     sessionRepo.user = selectedUser;
-    console.log("Session user", sessionRepo.user);
 
     dispatch(fetchSession());
   };
