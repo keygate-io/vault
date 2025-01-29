@@ -1,12 +1,13 @@
 import { HStack, VStack, Text, Button, Box } from "@chakra-ui/react";
-import { CheckCircleIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import {
+  CheckCircleIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+} from "@heroicons/react/24/solid";
 import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
+import { SentimentTransactionBadge } from "@/components/ui/transaction-badge";
 import PropTypes from "prop-types";
-import {
-  SentimentTransactionBadge,
-  TransactionBadge,
-} from "@/components/ui/transaction-badge";
 import floatPrecision from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,11 +20,14 @@ import {
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
 import { selectVaultSigners } from "@/state/signers_slice";
+import { selectUsersByIdArray } from "@/state/users_slice";
 import {
   executeTransaction,
   isExecutionLoading,
 } from "@/state/transactions_slice";
-import { toaster } from "@/components/ui/toaster";
+import { selectApprovers, selectRejectors } from "@/state/decisions_slice";
+import { Avatar } from "@/components/ui/avatar/avatar";
+import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 
 const ActionExecuteButton = ({ tx }) => {
   const dispatch = useDispatch();
@@ -114,7 +118,6 @@ const ActionApproveButton = ({ txId, vaultId }) => {
 };
 
 const TransactionItem = ({ tx }) => {
-  const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
   const signers = useSelector((state) =>
     selectVaultSigners(state, currentVaultId)
@@ -125,8 +128,22 @@ const TransactionItem = ({ tx }) => {
   const approvals = useSelector((state) =>
     selectApprovalsCount(state, currentVaultId, tx.id)
   );
+  const approversUserId = useSelector((state) =>
+    selectApprovers(state, currentVaultId, tx.id)
+  );
+  const rejectorsUserId = useSelector((state) =>
+    selectRejectors(state, currentVaultId, tx.id)
+  );
 
-  const adjustedThreshold = Math.min(threshold, signers.length);
+  const approvers = useSelector((state) =>
+    selectUsersByIdArray(state, approversUserId)
+  );
+
+  const rejectors = useSelector((state) =>
+    selectUsersByIdArray(state, rejectorsUserId)
+  );
+
+  const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
 
   useEffect(() => {
     if (tx.isSuccessful) {
@@ -138,37 +155,12 @@ const TransactionItem = ({ tx }) => {
     }
   }, [tx.isSuccessful]);
 
-  function deriveStatusDisplayText() {
-    if (tx.isExecuted && tx.isSuccessful) {
-      return "Executed";
-    }
-
-    if (tx.isExecuted && !tx.isSuccessful) {
-      return "Failed";
-    }
-
-    return "Pending";
-  }
-
   function conditionallyRenderActionButton() {
     if (tx.isExecuted) {
-      return (
-        <VStack align="flex-end" spacing={2}>
-          <HStack>
-            <Text fontSize="xs" cursor="pointer">
-              See transaction details
-            </Text>
-            <ChevronRightIcon width={12} height={12} />
-          </HStack>
-        </VStack>
-      );
+      return;
     }
 
-    if (tx.isSuccessful) {
-      return <CheckCircleIcon color="white" width={20} height={20} />;
-    }
-
-    if (approvals >= adjustedThreshold) {
+    if (approvals >= Math.min(threshold, signers.length)) {
       return <ActionExecuteButton tx={tx} />;
     }
 
@@ -176,10 +168,7 @@ const TransactionItem = ({ tx }) => {
   }
 
   function conditionallyRenderApprovalGrid() {
-    if (tx.isExecuted) {
-      return null;
-    }
-
+    if (tx.isExecuted) return null;
     return <ApprovalGrid showThreshold={true} txId={tx.id} />;
   }
 
@@ -192,14 +181,30 @@ const TransactionItem = ({ tx }) => {
             type={tx.recipient.startsWith("rrkah") ? "principal" : "account"}
           />
           <HStack>
-            <TransactionBadge content={`${floatPrecision(tx.amount)} ICP`} />
             <SentimentTransactionBadge
-              content={deriveStatusDisplayText()}
+              content={`${floatPrecision(tx.amount)} ICP`}
+              sentiment="kg.neutral"
+            />
+            <SentimentTransactionBadge
+              content={tx.isSuccessful ? "Success" : "Pending"}
               sentiment={derivedSentimentColor}
             />
+            <Text>
+              Approved by ({approvers.length}): [{approversUserId.length}].
+              Transaction id is {tx.id}
+            </Text>
+            <AvatarGroup>
+              {approvers.map((approver) => (
+                <Avatar
+                  key={approver.id}
+                  name={approver.name}
+                  src={approver.avatar}
+                  fallback={approver.name[0]}
+                />
+              ))}
+            </AvatarGroup>
           </HStack>
         </VStack>
-
         <VStack align="flex-end">
           {conditionallyRenderActionButton()}
           {conditionallyRenderApprovalGrid()}
