@@ -138,4 +138,9 @@ export const selectUsersByIds = createSelector(
   (users, ids) => users.filter((user) => ids.includes(user.id))
 );
 
+export const selectUsersByIdArray = createSelector(
+  [selectUsers, (_, ids) => ids],
+  (users, ids) => users.filter((user) => ids.includes(user.id))
+);
+
 export const { reducer: usersReducer } = usersSlice;

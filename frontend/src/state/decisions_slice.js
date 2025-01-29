@@ -109,7 +109,19 @@ const selectDecisionsState = (state) => state.decisions;
 const selectDecisionsForTx = createSelector(
   [selectDecisionsState, (_, vaultId) => vaultId, (_, __, txId) => txId],
   (decisionsState, vaultId, txId) => {
-    return decisionsState.decisions_map[vaultId]?.[txId] || [];
+    console.log("selectDecisionsForTx - inputs:", {
+      decisionsState,
+      vaultId,
+      txId,
+    });
+    const decisions = decisionsState.decisions_map[vaultId]?.[txId] || [];
+    console.log(
+      "selectDecisionsForTx - output decisions (for txId:",
+      txId,
+      "):",
+      decisions
+    );
+    return decisions;
   }
 );
 
@@ -141,6 +153,28 @@ export const hasUserApprovedThisTxId = createSelector(
 export const isTransactionLoading = createSelector(
   [selectDecisionsState, (_, txId) => txId],
   (decisionsState, txId) => Boolean(decisionsState.loadingTxIds[txId])
+);
+
+export const selectDecisionMakers = createSelector(
+  [selectDecisionsForTx],
+  (decisions) => decisions.map((decision) => decision[0])
+);
+
+export const selectApprovers = createSelector(
+  [selectDecisionsForTx],
+  (decisions) => {
+    console.log("selectApprovers - input decisions:", decisions);
+    const approvers = decisions
+      .filter((decision) => decision[1] === true)
+      .map((decision) => decision[0]);
+    console.log("selectApprovers - filtered approvers:", approvers);
+    return approvers;
+  }
+);
+
+export const selectRejectors = createSelector(
+  [selectDecisionsForTx],
+  (decisions) => decisions.filter((decision) => decision[1] === false)
 );
 
 export const { reducer: decisionsReducer } = decisionsSlice;
