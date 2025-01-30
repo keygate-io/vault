@@ -20,6 +20,9 @@ const GlobalSettings = {
   },
   session: {
     source: "mock",
+    mock: {
+      initialize_at_startup: false,
+    },
     enabled: true,
   },
   users: {

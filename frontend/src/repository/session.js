@@ -25,8 +25,10 @@ export class SessionRepository {
 class InMemorySessionRepository extends SessionRepository {
   constructor() {
     super();
-    this.user = getMockedCurrentUser();
-    this.vault = getMockedCurrentVault();
+    if (GlobalSettings.session.mock.initialize_at_startup) {
+      this.user = getMockedCurrentUser();
+      this.vault = getMockedCurrentVault();
+    }
   }
 
   async login() {

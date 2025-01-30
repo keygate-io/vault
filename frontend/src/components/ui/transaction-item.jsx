@@ -1,8 +1,7 @@
-import { HStack, VStack, Text, Button, Box } from "@chakra-ui/react";
+import { HStack, VStack, Button, Box } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
-  ChevronRightIcon,
-  ChevronLeftIcon,
+  CheckBadgeIcon,
 } from "@heroicons/react/24/solid";
 import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
@@ -198,13 +197,19 @@ const TransactionItem = ({ tx }) => {
             {
               tx.isExecuted && (
                 <AvatarGroup>
-                {approvers.map((approver) => (
-                  <Avatar
-                    key={approver.id}
-                    name={approver.name}
-                    src={approver.avatarUrl}
-                    fallback={approver.name[0]}
-                  />
+                {approvers.map((approver, index) => (
+                    <Box position="relative" key={approver.id}>
+                      <Avatar
+                        name={approver.name}
+                        src={approver.avatarUrl}
+                        fallback={approver.name[0]}
+                        ml={index === 0 ? 0 : -7}
+                        size="xs"
+                      />
+                      <Box position="absolute" bottom="-1" right="-1" zIndex={100}>
+                        <CheckBadgeIcon width={12} height={12} color="#22c55e" />
+                      </Box>
+                    </Box>
                 ))}
                 </AvatarGroup>
               )

@@ -8,7 +8,6 @@ import { selectCurrentVaultId } from "@/state/session_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectVaultSigners } from "../../state/signers_slice";
 import { GlobalSettings } from "@/constants/global_config";
-import { useEffect } from "react";
 
 export function ApprovalGrid({ txId, ...props }) {
   const approvedBg = useColorModeValue("black", "white");

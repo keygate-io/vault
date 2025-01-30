@@ -1,4 +1,4 @@
-import { VStack, Box, HStack, Text } from "@chakra-ui/react";
+import { VStack, Box, HStack, Text, Button} from "@chakra-ui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useEffect } from "react";
 import BalanceDisplay from "@/components/ui/balance-display";
@@ -20,6 +20,8 @@ import { fetchVaults } from "@/state/vaults_slice";
 import { selectCurrentUser } from "@/state/session_slice";
 import { fetchDecisions } from "@/state/decisions_slice";
 import { Toaster } from "@/components/ui/toaster";
+import { LoginModal } from "@/layout/login-modal";
+
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions_list } = useSelector((state) => state.transactions);
@@ -88,6 +90,9 @@ function MultisigWallet() {
       </VStack>
       <DevModePanel />
       <Toaster />
+      <LoginModal>
+        <Button>Login</Button>
+      </LoginModal>
     </Box>
   );
 }
