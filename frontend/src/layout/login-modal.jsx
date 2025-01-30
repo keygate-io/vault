@@ -12,14 +12,14 @@ import {
 } from '../components/ui/dialog'
 import { useColorModeValue } from '@/components/ui/color-mode'
 
-export function LoginModal({ children }) {
-  const bgColor = useColorModeValue('white', 'gray.900') // Darker background for dark mode
-  const borderColor = useColorModeValue('gray.200', 'gray.800')
-  const textColor = useColorModeValue('gray.700', 'gray.300')
-  const subtleTextColor = useColorModeValue('gray.500', 'gray.400')
+export function LoginModal({ children, open, setIsOpen }) {
+  const bgColor = useColorModeValue("white", "gray.900"); // Darker background for dark mode
+  const borderColor = useColorModeValue("gray.200", "gray.800");
+  const textColor = useColorModeValue("gray.700", "gray.300");
+  const subtleTextColor = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <DialogRoot zIndex={30000000}>
+    <DialogRoot zIndex={30000000} open={open} setOpen={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       <DialogContent
@@ -66,7 +66,7 @@ export function LoginModal({ children }) {
                 onClick={() => {
                   /* TODO: Implement Google sign in */
                 }}
-                _hover={{ bg: useColorModeValue('gray.100', 'gray.800') }}
+                _hover={{ bg: useColorModeValue("gray.100", "gray.800") }}
                 borderColor={borderColor}
                 color={textColor}
               >
@@ -79,7 +79,7 @@ export function LoginModal({ children }) {
                 onClick={() => {
                   /* TODO: Implement Apple sign in */
                 }}
-                _hover={{ bg: useColorModeValue('gray.100', 'gray.800') }}
+                _hover={{ bg: useColorModeValue("gray.100", "gray.800") }}
                 borderColor={borderColor}
                 color={textColor}
               >
@@ -104,12 +104,12 @@ export function LoginModal({ children }) {
               textAlign="center"
               mt={4}
             >
-              By continuing, you agree to our{' '}
-              <Text as="span" color={useColorModeValue('blue.600', 'blue.400')}>
+              By continuing, you agree to our{" "}
+              <Text as="span" color={useColorModeValue("blue.600", "blue.400")}>
                 Terms of Service
-              </Text>{' '}
-              and{' '}
-              <Text as="span" color={useColorModeValue('blue.600', 'blue.400')}>
+              </Text>{" "}
+              and{" "}
+              <Text as="span" color={useColorModeValue("blue.600", "blue.400")}>
                 Privacy Policy
               </Text>
             </Text>
@@ -117,5 +117,5 @@ export function LoginModal({ children }) {
         </DialogBody>
       </DialogContent>
     </DialogRoot>
-  )
+  );
 }

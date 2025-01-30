@@ -1,5 +1,9 @@
 {
   "canisters": {
+    "auth": {
+      "main": "auth/main.mo",
+      "type": "motoko"
+    },
     "backend": {
       "main": "backend/main.mo",
       "type": "motoko"

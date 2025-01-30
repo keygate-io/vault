@@ -11,7 +11,12 @@ import DevModePanel from "@/components/ui/dev-mode-panel";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "@/state/transactions_slice";
 import { getAllUsers } from "@/state/users_slice";
-import { login, selectCurrentVaultId } from "@/state/session_slice";
+import {
+  login,
+  selectCurrentVaultId,
+  selectIsAuthenticated,
+  selectIsAuthenticating,
+} from "@/state/session_slice";
 import { Feature } from "@/components/ui/feature";
 import { fetchVaultById } from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
@@ -27,6 +32,10 @@ function MultisigWallet() {
   const { transactions_list } = useSelector((state) => state.transactions);
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
   const currentUser = useSelector((state) => selectCurrentUser(state));
+  const isAuthenticated = useSelector((state) => selectIsAuthenticated(state));
+  const isAuthenticating = useSelector((state) =>
+    selectIsAuthenticating(state)
+  );
 
   useEffect(() => {
     // CORE: First, we login
@@ -90,7 +99,7 @@ function MultisigWallet() {
       </VStack>
       <DevModePanel />
       <Toaster />
-      <LoginModal>
+      <LoginModal open={!isAuthenticated && !isAuthenticating}>
         <Button>Login</Button>
       </LoginModal>
     </Box>
