@@ -1,13 +1,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getRepository } from "@/constants/module_config";
 import { createSelector } from "reselect";
+import { container } from "@/inversify.config";
 
 // Async thunks
 export const fetchSignersForVault = createAsyncThunk(
   "signers/getSigners",
   async (vaultId, { rejectWithValue }) => {
     try {
-      const repository = getRepository("signers");
+      const repository = container.get(SIGNER_REPOSITORY);
       const signers = await repository.getSignersByVaultId(vaultId);
       return {
         vaultId,
@@ -23,7 +24,7 @@ export const addSignerToVault = createAsyncThunk(
   "signers/addSigner",
   async ({ vaultId, signerId }, { rejectWithValue }) => {
     try {
-      const repository = getRepository("signers");
+      const repository = container.get(SIGNER_REPOSITORY);
       const signersMap = await repository.addSignerToWallet(vaultId, signerId);
       return signersMap;
     } catch (error) {
@@ -36,7 +37,7 @@ export const removeSignerFromVault = createAsyncThunk(
   "signers/removeSigner",
   async ({ vaultId, signerId }, { rejectWithValue }) => {
     try {
-      const repository = getRepository("signers");
+      const repository = container.get(SIGNER_REPOSITORY);
       const signersMap = await repository.removeSignerFromWallet(
         vaultId,
         signerId

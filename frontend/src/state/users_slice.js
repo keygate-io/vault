@@ -41,6 +41,15 @@ export const deleteUserById = createAsyncThunk(
   }
 );
 
+export const getCurrentUser = createAsyncThunk(
+  "users/getCurrentUser",
+  async (_, { rejectWithValue }) => {
+    const repository = getRepository("session");
+    const user = await repository.getCurrentUser();
+    return user;
+  }
+);
+
 export const getUserById = createAsyncThunk(
   "users/getById",
   async (userId, { rejectWithValue }) => {
@@ -124,6 +133,18 @@ export const usersSlice = createSlice({
         state.loading = false;
       })
       .addCase(getUserById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(getCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.currentUser = action.payload;
+        state.loading = false;
+      })
+      .addCase(getCurrentUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

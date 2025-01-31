@@ -10,7 +10,7 @@ const GlobalSettings = {
   vaults: {
     source: "mock",
     enabled: true,
-    mock_vaults: 10,
+    mock_vaults: 0,
   },
   header: {
     enabled: true,
@@ -19,9 +19,13 @@ const GlobalSettings = {
     enabled: true,
   },
   session: {
-    source: "mock",
+    source: "icp",
     mock: {
       initialize_at_startup: false,
+    },
+    icp: {
+      host: "http://localhost:5173",
+      manager_canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
     },
     enabled: true,
   },
@@ -34,11 +38,11 @@ const GlobalSettings = {
     enabled: true,
   },
   demo: {
-    enabled: false,
+    enabled: true,
   },
   pilot_program_invitation: {
     enabled: true,
   },
 };
 
-export { GlobalSettings };
+export { GlobalSettings }; 

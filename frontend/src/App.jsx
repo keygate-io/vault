@@ -10,9 +10,8 @@ import TransactionsList from "@/components/ui/transactions-list";
 import DevModePanel from "@/components/ui/dev-mode-panel";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTransactions } from "@/state/transactions_slice";
-import { getAllUsers } from "@/state/users_slice";
+import { getAllUsers, getCurrentUser } from "@/state/users_slice";
 import {
-  login,
   selectCurrentVaultId,
   selectIsAuthenticated,
   selectIsAuthenticating,
@@ -20,12 +19,13 @@ import {
 import { Feature } from "@/components/ui/feature";
 import { fetchVaultById } from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
-import { fetchSession } from "@/state/session_slice";
+import { setAuthenticatedAgent } from "@/state/session_slice";
 import { fetchVaults } from "@/state/vaults_slice";
 import { selectCurrentUser } from "@/state/session_slice";
 import { fetchDecisions } from "@/state/decisions_slice";
 import { Toaster } from "@/components/ui/toaster";
-import { LoginModal } from "@/layout/login-modal";
+import { ConnectWallet } from "@nfid/identitykit/react";
+import { useAgent } from "@nfid/identitykit/react";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
@@ -33,19 +33,19 @@ function MultisigWallet() {
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
   const currentUser = useSelector((state) => selectCurrentUser(state));
   const isAuthenticated = useSelector((state) => selectIsAuthenticated(state));
-  const isAuthenticating = useSelector((state) =>
-    selectIsAuthenticating(state)
-  );
+  const authenticatedAgent = useAgent();
 
   useEffect(() => {
-    // CORE: First, we login
-    dispatch(login());
-    // CORE: We get all the vaults
+    if (authenticatedAgent) {
+      console.log("Found state change for useAgent()'s authenticatedAgent. Dispatching setAuthenticatedAgent.");
+      dispatch(setAuthenticatedAgent(authenticatedAgent));
+    }
+  }, [authenticatedAgent]);
+
+  useEffect(() => {
     dispatch(fetchVaults());
-    // CORE: Then, we fetch the session
-    dispatch(fetchSession());
-    // ADMIN: Then, we fetch the users
     dispatch(getAllUsers());
+    dispatch(getCurrentUser());
   }, [dispatch]);
 
   // CORE: Once we have the session, we can fetch the vault and the signers
@@ -99,9 +99,9 @@ function MultisigWallet() {
       </VStack>
       <DevModePanel />
       <Toaster />
-      <LoginModal open={!isAuthenticated && !isAuthenticating}>
-        <Button>Login</Button>
-      </LoginModal>
+      {
+        !isAuthenticated && <ConnectWallet />
+      }
     </Box>
   );
 }

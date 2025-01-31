@@ -1,4 +1,5 @@
-import { faker } from "@faker-js/faker"; // You'd need to install this package
+import { Principal } from "@dfinity/principal";
+import { faker } from "@faker-js/faker";
 
 export function generateDefaultTransactionTraits() {
   return {
@@ -40,7 +41,6 @@ export function generateMockTransactions() {
       amount: `${faker.number.float({
         min: 0.1,
         max: 10,
-        precision: 0.1,
       })} ICP`,
       ...successfulTransactionTraits,
     });
@@ -54,7 +54,6 @@ export function generateMockTransactions() {
       amount: `${faker.number.float({
         min: 0.1,
         max: 10,
-        precision: 0.1,
       })} ICP`,
       ...failedTransactionTraits,
     });
@@ -68,7 +67,6 @@ export function generateMockTransactions() {
       amount: `${faker.number.float({
         min: 0.1,
         max: 10,
-        precision: 0.1,
       })} ICP`,
       isExecuted: false,
       isSuccessful: false,
@@ -86,7 +84,6 @@ export function generateMockTransactions() {
         amount: `${faker.number.float({
           min: 0.1,
           max: 10,
-          precision: 0.1,
         })} ICP`,
         approvals: faker.number.int({ min: 0, max: 3 }),
         isExecuted: true,
@@ -105,7 +102,6 @@ export function generateMockThreshold(minimum = 1, maximum = 5) {
 let mockedCurrentUser = {
   id: 1,
   name: "Travis",
-  address: `${faker.string.hexadecimal({ length: 40, prefix: "" })}`,
   avatarUrl: faker.image.avatarGitHub(),
 };
 
@@ -140,7 +136,7 @@ export function generateMockUsers() {
 
 let generatedMockSigners = {};
 export function generateMockSigners() {
-  if (generatedMockSigners.length > 0) {
+  if (Object.keys(generatedMockSigners).length > 0) {
     return generatedMockSigners;
   }
 
@@ -189,7 +185,7 @@ let lastVaultId = 0;
 export function generateMockVault() {
   return {
     id: lastVaultId++,
-    balance: faker.number.float({ min: 0, max: 1000, precision: 0.01 }),
+    balance: faker.number.float({ min: 0, max: 1000 }),
     threshold: faker.number.int({ min: 1, max: 5 }),
   };
 }
@@ -211,6 +207,7 @@ export function generateMockVaults(numberOfVaults = 3) {
 let mockedCurrentVault = {
   id: 1,
   name: "Vault 1",
+  canister_id: Principal.fromText("36i4z-q2jft-sbfb3-fs2ha"),
 };
 
 export function getMockedCurrentVault() {
@@ -223,4 +220,4 @@ export function getRandomMockedVaultId() {
     return null;
   }
   return vaults[faker.number.int({ min: 0, max: vaults.length - 1 })].id;
-}
+} 

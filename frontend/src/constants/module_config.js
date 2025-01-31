@@ -1,7 +1,7 @@
 import { InMemoryTransactionRepository } from "@/repository/transactions";
 import { InMemorySignerRepository } from "@/repository/signers";
 import { InMemoryVaultRepository } from "@/repository/vaults";
-import { InMemorySessionRepository } from "@/repository/session";
+import { InMemorySessionRepository, ICPSessionRepository } from "@/repository/session";
 import { InMemoryUserRepository } from "@/repository/users";
 import { InMemoryDecisionRepository } from "@/repository/decisions";
 import { GlobalSettings } from "@/constants/global_config";
@@ -20,6 +20,7 @@ const SourceToRepository = {
   },
   session: {
     mock: InMemorySessionRepository,
+    icp: ICPSessionRepository,
   },
   users: {
     mock: InMemoryUserRepository,
@@ -31,7 +32,7 @@ const SourceToRepository = {
 
 const getRepository = (module) => {
   if (!SingletonRepositories[module]) {
-    const source = GlobalSettings[module].enabled ? "mock" : "api";
+    const source = GlobalSettings[module].source;
     const Repository = SourceToRepository[module]?.[source];
 
     if (!Repository) {
@@ -43,4 +44,4 @@ const getRepository = (module) => {
   return SingletonRepositories[module];
 };
 
-export { SourceToRepository, getRepository };
+export { SourceToRepository, getRepository }; 

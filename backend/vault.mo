@@ -16,7 +16,7 @@ actor {
     private stable var transactions : [(Nat, Types.Transaction)] = [];
     private stable var confirmations : [(Nat, [(Principal, Bool)])] = [];
 
-    private stable var threshold : Nat = 0;
+    private stable var threshold : Nat = 1;
 
     // Constructor
     public shared({ caller }) func init(newOwners : [Principal], threshold_value : Nat) : async Result.Result<(), Types.ApiError> {

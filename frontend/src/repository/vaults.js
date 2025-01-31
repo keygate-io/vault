@@ -19,25 +19,9 @@ export function createVault(params = {}) {
 
 let mockedVaults = generateMockVaults(GlobalSettings.vaults.mock_vaults);
 
-// Repository interface (abstract class)
-export class VaultRepository {
-  async getById(vaultId) {
-    throw new Error("Not implemented");
-  }
-
-  async getAll() {
-    throw new Error("Not implemented");
-  }
-
-  async update(vaultId, vaultData) {
-    throw new Error("Not implemented");
-  }
-}
-
 // In-memory implementation of the repository
-export class InMemoryVaultRepository extends VaultRepository {
+export class InMemoryVaultRepository {
   constructor() {
-    super();
     if (GlobalSettings.vaults.source === "mock") {
       this.vaults = mockedVaults;
     }
@@ -55,4 +39,4 @@ export class InMemoryVaultRepository extends VaultRepository {
   async update(vaultId, vaultData) {
     this.vaults.set(vaultId, vaultData);
   }
-}
+} 

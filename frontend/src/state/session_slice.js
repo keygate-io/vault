@@ -22,6 +22,20 @@ export const login = createAsyncThunk(
   }
 );
 
+export const setAuthenticatedAgent = createAsyncThunk(
+  "session/setAuthenticatedAgent",
+  async (agent, { rejectWithValue }) => {
+    try {
+      console.log("Setting authenticated agent", agent);
+      const repository = getRepository("session");
+      await repository.setAuthenticatedAgent(agent);
+      return {};
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchSession = createAsyncThunk(
   "session/fetchSession",
   async (_, { rejectWithValue }) => {
@@ -67,6 +81,19 @@ export const sessionSlice = createSlice({
     builder.addCase(fetchSession.rejected, (state, action) => {
       state.error = action.payload;
       state.fetchSessionLoading = false;
+    });
+    builder.addCase(setAuthenticatedAgent.fulfilled, (state, action) => {
+      state.error = null;
+      state.isAuthenticated = true;
+      state.isAuthenticating = false;
+    });
+    builder.addCase(setAuthenticatedAgent.pending, (state) => {
+      state.isAuthenticating = true;
+      state.error = null;
+    });
+    builder.addCase(setAuthenticatedAgent.rejected, (state, action) => {
+      state.error = action.payload;
+      state.isAuthenticating = false;
     });
   },
 });

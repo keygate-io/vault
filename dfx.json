@@ -1,22 +1,26 @@
 {
   "canisters": {
-    "auth": {
-      "main": "auth/main.mo",
-      "type": "motoko"
+    "vault": {
+      "main": "backend/vault.mo",
+      "type": "motoko",
+      "declarations": {
+        "output": "frontend/idl/vault",
+        "bindings": ["ts"]
+      }
     },
-    "backend": {
-      "main": "backend/main.mo",
-      "type": "motoko"
-    },
-    "backend_test": {
-      "main": "backend/test.mo",
-      "type": "motoko"
+    "manager": {
+      "main": "backend/manager.mo",
+      "type": "motoko",
+      "declarations": {
+        "output": "frontend/idl/manager",
+        "bindings": ["ts"]
+      }
     }
   },
   "defaults": {
     "build": {
       "args": "",
-      "packtool": ""
+      "packtool": "mops sources"
     }
   },
   "output_env_file": ".env",
