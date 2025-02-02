@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getRepository } from "@/constants/module_config";
 import { createSelector } from "reselect";
+import { container } from "../inversify.config";
+import { VAULTS_REPOSITORY } from "@/repository/vaults";
 
 // Async thunks
 export const fetchVaultById = createAsyncThunk(
@@ -20,8 +22,9 @@ export const fetchVaults = createAsyncThunk(
   "vaults/fetchVaults",
   async (_, { rejectWithValue }) => {
     try {
-      const repository = getRepository("vaults");
+      const repository = container.get(VAULTS_REPOSITORY);
       const vaults = await repository.getAll();
+      console.log("vaults", vaults);
       return vaults;
     } catch (error) {
       return rejectWithValue(error.message);

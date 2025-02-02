@@ -5,7 +5,9 @@
       "type": "motoko",
       "declarations": {
         "output": "frontend/idl/vault",
-        "bindings": ["ts"]
+        "bindings": [
+          "js"
+        ]
       }
     },
     "manager": {
@@ -13,7 +15,9 @@
       "type": "motoko",
       "declarations": {
         "output": "frontend/idl/manager",
-        "bindings": ["ts"]
+        "bindings": [
+          "js"
+        ]
       }
     }
   },

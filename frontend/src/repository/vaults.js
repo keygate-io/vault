@@ -1,5 +1,7 @@
 import { generateMockVaults } from "@/utils/mockDataGenerator";
 import { GlobalSettings } from "@/constants/global_config";
+import { injectable, inject, decorate } from "inversify";
+import { SESSION_REPOSITORY } from "./session";
 
 // Helper function to create a vault object
 export function createVault(params = {}) {
@@ -39,4 +41,25 @@ export class InMemoryVaultRepository {
   async update(vaultId, vaultData) {
     this.vaults.set(vaultId, vaultData);
   }
-} 
+}
+
+export class ICPVaultsRepository {
+  constructor(sessionRepository) {
+    this.sessionRepository = sessionRepository;
+  }
+
+  async getAll() {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    const vaults = await managerActor.getVaults();
+    return vaults;
+  }
+}
+
+decorate(injectable(), ICPVaultsRepository);
+decorate(inject(SESSION_REPOSITORY), ICPVaultsRepository, 0);
+
+export const VAULTS_REPOSITORY = Symbol("VAULTS_REPOSITORY");

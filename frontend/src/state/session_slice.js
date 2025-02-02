@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getRepository } from "@/constants/module_config";
+import { container } from "@/inversify.config";
+import { SESSION_REPOSITORY } from "@/repository/session";
 
 const initialState = {
   user: null,
@@ -9,41 +10,15 @@ const initialState = {
   isAuthenticated: false,
 };
 
-export const login = createAsyncThunk(
-  "session/login",
-  async (_, { rejectWithValue }) => {
-    try {
-      const repository = getRepository("session");
-      const user = await repository.login();
-      return user;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const setAuthenticatedAgent = createAsyncThunk(
-  "session/setAuthenticatedAgent",
+export const initialize = createAsyncThunk(
+  "session/initialize",
   async (agent, { rejectWithValue }) => {
     try {
-      console.log("Setting authenticated agent", agent);
-      const repository = getRepository("session");
-      await repository.setAuthenticatedAgent(agent);
+      const repository = container.get(SESSION_REPOSITORY);
+      await repository.initialize(agent);
       return {};
     } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const fetchSession = createAsyncThunk(
-  "session/fetchSession",
-  async (_, { rejectWithValue }) => {
-    try {
-      const repository = getRepository("session");
-      const user = await repository.fetchSession();
-      return user;
-    } catch (error) {
+      console.error("Error setting authenticated agent", error);
       return rejectWithValue(error.message);
     }
   }
@@ -53,47 +28,20 @@ export const sessionSlice = createSlice({
   name: "session",
   initialState,
   extraReducers: (builder) => {
-    builder.addCase(login.fulfilled, (state, action) => {
-      state.user = action.payload.user;
-      state.vault = action.payload.vault;
+    builder.addCase(initialize.fulfilled, (state) => {
       state.error = null;
       state.isAuthenticated = true;
       state.isAuthenticating = false;
     });
-    builder.addCase(login.pending, (state) => {
+    builder.addCase(initialize.pending, (state) => {
       state.isAuthenticating = true;
+      state.isAuthenticated = false;
       state.error = null;
     });
-    builder.addCase(login.rejected, (state, action) => {
+    builder.addCase(initialize.rejected, (state, action) => {
       state.error = action.payload;
       state.isAuthenticating = false;
-    });
-    builder.addCase(fetchSession.fulfilled, (state, action) => {
-      state.user = action.payload.user;
-      state.vault = action.payload.vault;
-      state.isAuthenticated = true;
-      state.error = null;
-    });
-    builder.addCase(fetchSession.pending, (state) => {
-      state.fetchSessionLoading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchSession.rejected, (state, action) => {
-      state.error = action.payload;
-      state.fetchSessionLoading = false;
-    });
-    builder.addCase(setAuthenticatedAgent.fulfilled, (state, action) => {
-      state.error = null;
-      state.isAuthenticated = true;
-      state.isAuthenticating = false;
-    });
-    builder.addCase(setAuthenticatedAgent.pending, (state) => {
-      state.isAuthenticating = true;
-      state.error = null;
-    });
-    builder.addCase(setAuthenticatedAgent.rejected, (state, action) => {
-      state.error = action.payload;
-      state.isAuthenticating = false;
+      state.isAuthenticated = false;
     });
   },
 });

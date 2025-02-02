@@ -1,24 +1,23 @@
 import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
 import { getMockedCurrentVault } from "@/utils/mockDataGenerator";
 import { Actor } from "@dfinity/agent";
-import { idlFactory as VaultIDLFactory } from "../../idl/vault";
 import { idlFactory as ManagerIDLFactory } from "../../idl/manager";
 import { GlobalSettings } from "@/constants/global_config";
-import { injectable } from "inversify";
+import { injectable, decorate } from "inversify";
 
 // Repository interface
 export class ISessionRepository {
   async login() {
-    throw new Error('Method not implemented');
+    throw new Error("Method not implemented");
   }
   async getCurrentUser() {
-    throw new Error('Method not implemented');
+    throw new Error("Method not implemented");
   }
   async getCurrentVault() {
-    throw new Error('Method not implemented');
+    throw new Error("Method not implemented");
   }
   async fetchSession() {
-    throw new Error('Method not implemented');
+    throw new Error("Method not implemented");
   }
 }
 
@@ -46,7 +45,9 @@ export class InMemorySessionRepository extends ISessionRepository {
   }
 
   async setAuthenticatedAgent(agent) {
-    throw new Error("InMemorySessionRepository does not support setting an authenticated agent");
+    throw new Error(
+      "InMemorySessionRepository does not support setting an authenticated agent"
+    );
   }
 
   async getCurrentUser() {
@@ -65,14 +66,12 @@ export class InMemorySessionRepository extends ISessionRepository {
   }
 }
 
-@injectable()
 export class ICPSessionRepository extends ISessionRepository {
   constructor() {
     super();
     this.AuthenticatedAgent = null;
     this.VaultActor = null;
     this.ManagerActor = null;
-    console.log("Initializing ICPSessionRepository");
   }
 
   async login() {
@@ -80,42 +79,34 @@ export class ICPSessionRepository extends ISessionRepository {
   }
 
   async getCurrentUser() {
-    return this.ManagerActor.getUser();
+    const user = await this.ManagerActor.getUser();
+    return user;
   }
 
-  async initializeVault(vaultCanisterId) {
-    this.VaultActor = Actor.createActor(
-      VaultIDLFactory,
-      {
-        canisterId: vaultCanisterId,
-        agent: this.AuthenticatedAgent,
-      }
-    );
-  }
-
-  async initializeManager() {
-    this.ManagerActor = Actor.createActor(
-      ManagerIDLFactory,
-      {
-        canisterId: GlobalSettings.session.icp.manager_canister_id,
-        agent: this.AuthenticatedAgent,
-      }
-    );
-  }
-
-  async setAuthenticatedAgent(agent) {
+  async initialize(agent) {
     this.AuthenticatedAgent = agent;
-    
-    // Initialize Manager Actor
+
+    // Fetch root key for certificate validation during development
+    if (import.meta.env.VITE_DFX_NETWORK !== "ic") {
+      await this.AuthenticatedAgent.fetchRootKey().catch((err) => {
+        console.warn(
+          "Unable to fetch root key. Check to ensure that your local replica is running."
+        );
+        console.error(err);
+      });
+    }
+
     this.ManagerActor = Actor.createActor(ManagerIDLFactory, {
-      agent,
-      canisterId: GlobalSettings.session.icp.manager_canister_id
+      canisterId: GlobalSettings.session.icp.manager_canister_id,
+      agent: this.AuthenticatedAgent,
     });
-    
-    // Get user's vault ID from manager canister
-    const vaultResponse = await this.ManagerActor.getVault(0n); // Use proper vault index
-    if (vaultResponse && vaultResponse.length > 0) {
-      await this.initializeVault(vaultResponse[0].canister_id);
+
+    try {
+      const user = await this.getCurrentUser();
+      return { user };
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      throw error;
     }
   }
 
@@ -128,5 +119,7 @@ export class ICPSessionRepository extends ISessionRepository {
   }
 }
 
-inversify.decorate(inversify.injectable(), InMemorySessionRepository);
-inversify.decorate(inversify.injectable(), ICPSessionRepository); 
+decorate(injectable(), InMemorySessionRepository);
+decorate(injectable(), ICPSessionRepository);
+
+export const SESSION_REPOSITORY = Symbol.for("SESSION_REPOSITORY");

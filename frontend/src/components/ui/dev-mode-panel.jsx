@@ -9,7 +9,7 @@ import { setFeatureEnabled } from "@/state/config_slice";
 import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { Avatar } from "@/components/ui/avatar/avatar";
 import { selectCurrentUserId } from "@/state/session_slice";
-import { fetchSession } from "@/state/session_slice";
+// import { fetchSession } from "@/state/session_slice";
 import { getRepository } from "@/constants/module_config";
 
 // Mock sessions for development
@@ -34,7 +34,7 @@ export default function DevModePanel() {
     const sessionRepo = getRepository("session");
     sessionRepo.user = selectedUser;
 
-    dispatch(fetchSession());
+    // dispatch(fetchSession());
   };
 
   if (!GlobalSettings.dev_mode.enabled) return null;

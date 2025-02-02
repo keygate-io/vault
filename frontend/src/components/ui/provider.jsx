@@ -14,7 +14,7 @@ export function Provider(props) {
     <IdentityKitProvider
       authType={"DELEGATION"}
       signerClientOptions={{
-          targets: ["21301230123whateverthefuck"]
+        targets: [import.meta.env.VITE_CANISTER_ID_MANAGER],
       }}
     >
       <ReduxProvider store={store}>
@@ -23,6 +23,5 @@ export function Provider(props) {
         </ChakraProvider>
       </ReduxProvider>
     </IdentityKitProvider>
-
   );
 }

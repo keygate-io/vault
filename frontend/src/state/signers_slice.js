@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getRepository } from "@/constants/module_config";
 import { createSelector } from "reselect";
 import { container } from "@/inversify.config";
-
+import { SIGNER_REPOSITORY } from "@/repository/signers";
 // Async thunks
 export const fetchSignersForVault = createAsyncThunk(
   "signers/getSigners",

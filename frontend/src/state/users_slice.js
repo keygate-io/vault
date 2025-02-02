@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getRepository } from "@/constants/module_config";
 import { createSelector } from "reselect";
+import { container } from "@/inversify.config";
+import { SESSION_REPOSITORY } from "../repository/session";
 
 export const registerUser = createAsyncThunk(
   "users/register",
@@ -10,6 +12,7 @@ export const registerUser = createAsyncThunk(
       const user = await repository.register(userData);
       return user;
     } catch (error) {
+      console.log("Error registering user", error);
       return rejectWithValue(error.message);
     }
   }
@@ -23,19 +26,7 @@ export const getAllUsers = createAsyncThunk(
       const users = await repository.getAll();
       return users;
     } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const deleteUserById = createAsyncThunk(
-  "users/deleteById",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const repository = getRepository("users");
-      await repository.deleteById(userId);
-      return userId;
-    } catch (error) {
+      console.log("Error getting all users", error);
       return rejectWithValue(error.message);
     }
   }
@@ -44,9 +35,15 @@ export const deleteUserById = createAsyncThunk(
 export const getCurrentUser = createAsyncThunk(
   "users/getCurrentUser",
   async (_, { rejectWithValue }) => {
-    const repository = getRepository("session");
-    const user = await repository.getCurrentUser();
-    return user;
+    try {
+      const repository = container.get(SESSION_REPOSITORY);
+      console.log("repository", repository);
+      const user = await repository.getCurrentUser();
+      return user;
+    } catch (error) {
+      console.log("Error getting current user", error);
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -98,21 +95,6 @@ export const usersSlice = createSlice({
         state.loading = false;
       })
       .addCase(getAllUsers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // DeleteById
-      .addCase(deleteUserById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteUserById.fulfilled, (state, action) => {
-        state.users_list = state.users_list.filter(
-          (user) => user.id !== action.payload
-        );
-        state.loading = false;
-      })
-      .addCase(deleteUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

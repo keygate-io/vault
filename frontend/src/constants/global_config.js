@@ -25,7 +25,7 @@ const GlobalSettings = {
     },
     icp: {
       host: "http://localhost:5173",
-      manager_canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+      manager_canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai",
     },
     enabled: true,
   },
@@ -38,7 +38,7 @@ const GlobalSettings = {
     enabled: true,
   },
   demo: {
-    enabled: true,
+    enabled: false,
   },
   pilot_program_invitation: {
     enabled: true,

@@ -1,4 +1,4 @@
-import { VStack, Box, HStack, Text, Button} from "@chakra-ui/react";
+import { VStack, Box, HStack, Text } from "@chakra-ui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useEffect } from "react";
 import BalanceDisplay from "@/components/ui/balance-display";
@@ -9,57 +9,38 @@ import CollapsibleButton from "@/components/ui/collapsible-button";
 import TransactionsList from "@/components/ui/transactions-list";
 import DevModePanel from "@/components/ui/dev-mode-panel";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTransactions } from "@/state/transactions_slice";
-import { getAllUsers, getCurrentUser } from "@/state/users_slice";
 import {
-  selectCurrentVaultId,
   selectIsAuthenticated,
   selectIsAuthenticating,
 } from "@/state/session_slice";
 import { Feature } from "@/components/ui/feature";
-import { fetchVaultById } from "@/state/vaults_slice";
-import { fetchSignersForVault } from "@/state/signers_slice";
-import { setAuthenticatedAgent } from "@/state/session_slice";
-import { fetchVaults } from "@/state/vaults_slice";
-import { selectCurrentUser } from "@/state/session_slice";
-import { fetchDecisions } from "@/state/decisions_slice";
+import { initialize } from "@/state/session_slice";
 import { Toaster } from "@/components/ui/toaster";
 import { ConnectWallet } from "@nfid/identitykit/react";
 import { useAgent } from "@nfid/identitykit/react";
+import { fetchVaults } from "@/state/vaults_slice";
 
 function MultisigWallet() {
   const dispatch = useDispatch();
   const { transactions_list } = useSelector((state) => state.transactions);
-  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
-  const currentUser = useSelector((state) => selectCurrentUser(state));
   const isAuthenticated = useSelector((state) => selectIsAuthenticated(state));
-  const authenticatedAgent = useAgent();
+  const isAuthenticating = useSelector((state) =>
+    selectIsAuthenticating(state)
+  );
+  const authenticatedAgent = useAgent({
+    host: import.meta.env.VITE_IC_HOST,
+  });
 
   useEffect(() => {
     if (authenticatedAgent) {
-      console.log("Found state change for useAgent()'s authenticatedAgent. Dispatching setAuthenticatedAgent.");
-      dispatch(setAuthenticatedAgent(authenticatedAgent));
+      console.log("Running initialize dispatch");
+      dispatch(initialize(authenticatedAgent));
     }
   }, [authenticatedAgent]);
 
   useEffect(() => {
     dispatch(fetchVaults());
-    dispatch(getAllUsers());
-    dispatch(getCurrentUser());
-  }, [dispatch]);
-
-  // CORE: Once we have the session, we can fetch the vault and the signers
-  useEffect(() => {
-    if (currentVaultId) {
-      dispatch(fetchVaultById(currentVaultId));
-      dispatch(fetchTransactions(currentVaultId));
-      dispatch(fetchSignersForVault(currentVaultId));
-    }
-  }, [currentVaultId, dispatch]);
-
-  useEffect(() => {
-    dispatch(fetchDecisions());
-  }, [currentUser]);
+  }, [isAuthenticated]);
 
   return (
     <Box maxW="1100px" mx="auto" pt={8}>
@@ -99,9 +80,7 @@ function MultisigWallet() {
       </VStack>
       <DevModePanel />
       <Toaster />
-      {
-        !isAuthenticated && <ConnectWallet />
-      }
+      {!isAuthenticated && !isAuthenticating && <ConnectWallet />}
     </Box>
   );
 }
