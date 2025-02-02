@@ -55,7 +55,15 @@ export class ICPVaultsRepository {
     }
 
     const vaults = await managerActor.getVaults();
-    return vaults;
+    const mapped_vaults = vaults.reduce((acc, vault, index) => {
+      acc[index] = {
+        id: index,
+        name: vault.name,
+      };
+      return acc;
+    }, {});
+    console.log("Vaults obtained successfully");
+    return mapped_vaults;
   }
 }
 

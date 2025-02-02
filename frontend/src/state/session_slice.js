@@ -6,7 +6,7 @@ const initialState = {
   user: null,
   vault: null,
   error: null,
-  isAuthenticating: true,
+  isAuthenticating: false,
   isAuthenticated: false,
 };
 
@@ -15,8 +15,8 @@ export const initialize = createAsyncThunk(
   async (agent, { rejectWithValue }) => {
     try {
       const repository = container.get(SESSION_REPOSITORY);
-      await repository.initialize(agent);
-      return {};
+      const { user } = await repository.initialize(agent);
+      return { user };
     } catch (error) {
       console.error("Error setting authenticated agent", error);
       return rejectWithValue(error.message);
@@ -28,10 +28,11 @@ export const sessionSlice = createSlice({
   name: "session",
   initialState,
   extraReducers: (builder) => {
-    builder.addCase(initialize.fulfilled, (state) => {
+    builder.addCase(initialize.fulfilled, (state, action) => {
       state.error = null;
       state.isAuthenticated = true;
       state.isAuthenticating = false;
+      state.user = action.payload.user;
     });
     builder.addCase(initialize.pending, (state) => {
       state.isAuthenticating = true;

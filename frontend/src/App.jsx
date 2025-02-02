@@ -1,4 +1,4 @@
-import { VStack, Box, HStack, Text } from "@chakra-ui/react";
+import { VStack, Box, HStack, Text, Button } from "@chakra-ui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useEffect } from "react";
 import BalanceDisplay from "@/components/ui/balance-display";
@@ -19,6 +19,27 @@ import { Toaster } from "@/components/ui/toaster";
 import { ConnectWallet } from "@nfid/identitykit/react";
 import { useAgent } from "@nfid/identitykit/react";
 import { fetchVaults } from "@/state/vaults_slice";
+import { selectVaults } from "@/state/vaults_slice";
+import { fetchSignersForVault } from "@/state/signers_slice";
+const CustomConnectButton = ({ onClick, disabled, loading }) => (
+  <Button
+    onClick={onClick}
+    disabled={disabled}
+    width="full"
+    bg="black"
+    color="white"
+    px="6"
+    py="6"
+    borderRadius="md"
+    _hover={{
+      bg: 'gray.800'
+    }}
+    fontSize="md"
+    fontWeight="semibold"
+  >
+    {loading ? 'Loading...' : 'Connect with NFID'}
+  </Button>
+);
 
 function MultisigWallet() {
   const dispatch = useDispatch();
@@ -30,17 +51,27 @@ function MultisigWallet() {
   const authenticatedAgent = useAgent({
     host: import.meta.env.VITE_IC_HOST,
   });
+  const vaults = useSelector((state) => selectVaults(state));
 
   useEffect(() => {
     if (authenticatedAgent) {
       console.log("Running initialize dispatch");
-      dispatch(initialize(authenticatedAgent));
+      dispatch(initialize(authenticatedAgent)).then((result) => {
+        if (!result.error) {
+          dispatch(fetchVaults());
+        }
+      });
     }
   }, [authenticatedAgent]);
 
   useEffect(() => {
-    dispatch(fetchVaults());
-  }, [isAuthenticated]);
+    if (vaults) {
+      if (vaults["0"]) {
+        console.log("Dispatching fetchSignersForVault.");
+        dispatch(fetchSignersForVault(vaults["0"].id));
+      }
+    }
+  }, [vaults]);
 
   return (
     <Box maxW="1100px" mx="auto" pt={8}>
@@ -80,7 +111,47 @@ function MultisigWallet() {
       </VStack>
       <DevModePanel />
       <Toaster />
-      {!isAuthenticated && !isAuthenticating && <ConnectWallet />}
+      {!isAuthenticated && !isAuthenticating && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="rgba(0, 0, 0, 0.6)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={1000}
+        >
+          <Box
+            bg="white"
+            p={8}
+            borderRadius="xl"
+            shadow="2xl"
+            maxW="md"
+            w="full"
+            mx={4}
+          >
+            <VStack spacing={4}>
+              <Text fontSize="xl" fontWeight="semibold" mb={2}>
+                Welcome to Keygate™
+              </Text>
+              <Text textAlign="center" mb={4}>
+                Keygate Vault is a secure multi-signature wallet for the Internet Computer. Create and manage shared wallets, propose transactions, and collaborate with other signers in a decentralized way. Please login with NFID to access your vaults.
+              </Text>
+              <Box
+                position="relative"
+                width="full"
+              >
+                <ConnectWallet
+                  connectButtonComponent={CustomConnectButton}
+                />
+              </Box>
+            </VStack>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }

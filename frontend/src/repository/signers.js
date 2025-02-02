@@ -1,6 +1,7 @@
 import { GlobalSettings } from "@/constants/global_config";
 import { generateMockSigners } from "@/utils/mockDataGenerator";
-import { injectable, decorate } from "inversify";
+import { injectable, inject, decorate } from "inversify";
+import { SESSION_REPOSITORY } from "./session";
 
 // Repository interface (abstract class)
 export class SignerRepository {
@@ -48,9 +49,34 @@ class InMemorySignerRepository extends SignerRepository {
   }
 }
 
+class ICPSignerRepository extends SignerRepository {
+  constructor(sessionRepository) {
+    super();
+    this.sessionRepository = sessionRepository;
+  }
+
+  async getSignersByVaultId(vault_id) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      const signers = await managerActor.getSigners(vault_id);
+      console.log("Successfully fetched signers for vault", vault_id);
+      return signers;
+    } catch (error) {
+      console.error('Error in getSignersByVaultId:', error);
+      throw error;
+    }
+  }
+}
+
 // Create and export a default instance
 const SIGNER_REPOSITORY = Symbol.for("SIGNER_REPOSITORY");
 
 decorate(injectable(), InMemorySignerRepository);
+decorate(injectable(), ICPSignerRepository);
+decorate(inject(SESSION_REPOSITORY), ICPSignerRepository, 0);
 
-export { InMemorySignerRepository, SIGNER_REPOSITORY };
+export { InMemorySignerRepository, ICPSignerRepository, SIGNER_REPOSITORY };

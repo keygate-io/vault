@@ -9,6 +9,7 @@ export const idlFactory = ({ IDL }) => {
     'getUser' : IDL.Func([], [User], []),
     'getUsers' : IDL.Func([IDL.Nat], [IDL.Vec(User)], []),
     'getVault' : IDL.Func([IDL.Nat], [IDL.Opt(Vault)], []),
+    'getVaults' : IDL.Func([], [IDL.Vec(Vault)], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

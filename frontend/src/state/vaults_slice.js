@@ -24,7 +24,6 @@ export const fetchVaults = createAsyncThunk(
     try {
       const repository = container.get(VAULTS_REPOSITORY);
       const vaults = await repository.getAll();
-      console.log("vaults", vaults);
       return vaults;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -78,11 +77,11 @@ export const vaultsSlice = createSlice({
 });
 
 // Selectors
-const selectVaultsState = (state) => state.vaults;
+export const selectVaults = (state) => state.vaults.vaults_map;
 
 export const selectVaultById = createSelector(
-  [selectVaultsState, (_, vaultId) => vaultId],
-  (vaultsState, vaultId) => vaultsState.vaults_map[vaultId]
+  [selectVaults, (_, vaultId) => vaultId],
+  (vaultsMap, vaultId) => vaultsMap[vaultId]
 );
 
 export const selectVaultThreshold = createSelector(

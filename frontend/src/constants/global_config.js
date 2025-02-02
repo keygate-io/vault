@@ -16,7 +16,7 @@ const GlobalSettings = {
     enabled: true,
   },
   dev_mode: {
-    enabled: true,
+    enabled: false,
   },
   session: {
     source: "icp",
