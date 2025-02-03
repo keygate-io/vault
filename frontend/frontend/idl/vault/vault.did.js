@@ -32,7 +32,6 @@ export const idlFactory = ({ IDL }) => {
     'executeTransaction' : IDL.Func([IDL.Nat], [Result], []),
     'getOwners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_2], ['query']),
-    'getTransactions' : IDL.Func([], [IDL.Vec(TransactionDetails)], ['query']),
     'init' : IDL.Func([IDL.Vec(IDL.Principal), IDL.Nat], [Result], []),
     'isConfirmed' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
     'proposeTransaction' : IDL.Func([IDL.Principal, IDL.Nat], [Result_1], []),

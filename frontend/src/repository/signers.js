@@ -63,8 +63,11 @@ class ICPSignerRepository extends SignerRepository {
 
     try {
       const signers = await managerActor.getSigners(vault_id);
-      console.log("Successfully fetched signers for vault", vault_id);
-      return signers;
+      console.log("Signers obtained successfully");
+      return signers.map((signer) => ({
+        id: signer.id.toString(),
+        name: signer.name,
+      }));
     } catch (error) {
       console.error('Error in getSignersByVaultId:', error);
       throw error;

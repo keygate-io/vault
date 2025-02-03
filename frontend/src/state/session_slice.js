@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { container } from "@/inversify.config";
 import { SESSION_REPOSITORY } from "@/repository/session";
+import { Principal } from "@dfinity/principal";
 
 const initialState = {
   user: null,
@@ -19,6 +20,20 @@ export const initialize = createAsyncThunk(
       return { user };
     } catch (error) {
       console.error("Error setting authenticated agent", error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const focus = createAsyncThunk(
+  "session/focus",
+  async (vault_input, { rejectWithValue }) => {
+    try {
+      const repository = container.get(SESSION_REPOSITORY);
+      const vault = await repository.focus(vault_input);
+      return vault;
+    } catch (error) {
+      console.error("Error focusing on vault", error);
       return rejectWithValue(error.message);
     }
   }
@@ -43,6 +58,16 @@ export const sessionSlice = createSlice({
       state.error = action.payload;
       state.isAuthenticating = false;
       state.isAuthenticated = false;
+    });
+    builder.addCase(focus.fulfilled, (state, action) => {
+      state.error = null;
+      state.vault = action.payload.vault;
+    });
+    builder.addCase(focus.pending, (state) => {
+      state.error = null;
+    });
+    builder.addCase(focus.rejected, (state, action) => {
+      state.error = action.payload;
     });
   },
 });

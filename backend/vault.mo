@@ -4,6 +4,8 @@ import Nat "mo:base/Nat";
 import Array "mo:base/Array";
 import Types "types";
 import Time "mo:base/Time";
+import Map "mo:map/Map";
+import { nhash } "mo:map/Map";
 
 
 actor {
@@ -13,8 +15,8 @@ actor {
 
     // State variables
     private stable var transactionCount : Nat = 0;
-    private stable var transactions : [(Nat, Types.Transaction)] = [];
-    private stable var confirmations : [(Nat, [(Principal, Bool)])] = [];
+    private stable var transactions = Map.new<Nat, Types.Transaction>();
+    private stable var confirmations = Map.new<Nat, [(Principal, Bool)]>();
 
     private stable var threshold : Nat = 1;
 
@@ -79,10 +81,10 @@ actor {
         transactionCount += 1;
 
         // Add the new transaction to the ledger
-        transactions := Array.append(transactions, [(txId, transaction)]);
+        Map.set(transactions, nhash, txId, transaction);
 
-        // Initialize confirmations for the new transaction
-        confirmations := Array.append(confirmations, [(txId, [(caller, true)])]);
+        // Initialize confirmations with Map
+        Map.set(confirmations, nhash, txId, [(caller, true)]);
 
         // Return the transaction ID
         #ok(txId)
@@ -98,10 +100,8 @@ actor {
             });
         };
 
-
         // Check if the transaction exists
-        let transactionExists = Array.find(transactions, func(t : (Nat, Types.Transaction)) : Bool { t.0 == txId });
-        if (transactionExists == null) {
+        if (Map.get(transactions, nhash, txId) == null) {
             return #err({
                 code = 404;
                 message = "Transaction not found";
@@ -109,9 +109,7 @@ actor {
             });
         };
 
-        let confirmationEntry = Array.find(confirmations, func(c : (Nat, [(Principal, Bool)])) : Bool { c.0 == txId });
-
-        switch (confirmationEntry) {
+        switch (Map.get(confirmations, nhash, txId)) {
             case null {
                 return #err({
                     code = 404;
@@ -119,7 +117,7 @@ actor {
                     details = null;
                 });
             };
-            case (? (id, existingConfirmations)) {
+            case (?existingConfirmations) {
                 let alreadyConfirmed = Array.find(existingConfirmations, func((p, confirmed) : (Principal, Bool)) : Bool {
                     Principal.equal(p, caller) and confirmed
                 });
@@ -134,19 +132,9 @@ actor {
 
                 // Add the caller's confirmation
                 let newConfirmation = (caller, true);
-                let updatedConfirmations = Array.append(existingConfirmations, [newConfirmation]);
 
-                // Update the confirmations array with the new confirmations
-                confirmations := Array.map<(Nat, [(Principal, Bool)]), (Nat, [(Principal, Bool)])>(
-                    confirmations, 
-                    func(c : (Nat, [(Principal, Bool)])) : (Nat, [(Principal, Bool)]) {
-                        if (c.0 == txId) {
-                            (txId, updatedConfirmations)
-                        } else {
-                            c
-                        }
-                    }
-                );
+                // Update confirmations with Map
+                Map.set(confirmations, nhash, txId, Array.append(existingConfirmations, [newConfirmation]));
 
                 #ok(())
             }
@@ -347,43 +335,42 @@ actor {
 
     // Utility & Queries
     public query func getTransactionDetails(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
-        let transactionEntry = Array.find(transactions, func(t : (Nat, Types.Transaction)) : Bool { t.0 == txId });
-
-        switch (transactionEntry) {
-            case (?entry) {
-                let (id, transaction) = entry;
-
-                // Get confirmation count
-                let confirmationEntry = Array.find(confirmations, func(c : (Nat, [(Principal, Bool)])) : Bool { c.0 == txId });
-
-                let confirms = switch (confirmationEntry) {
-                    case (? (_, confirms)) confirms;
-                    case null [];
-                };
-
-                let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
-                    confirms,
-                    0,
-                    func(acc : Nat, (p, confirmed) : (Principal, Bool)) : Nat {
-                        if (isOwnerPrincipal(p) and confirmed) { acc + 1 } else { acc }
-                    }
-                );
-
-                #ok({
-                    id = id;
-                    transaction = transaction;
-                    confirmations = confirmationCount;
-                    threshold = threshold;
-                    required = threshold;
-                    executed = false;
-                })
-            };
+        switch (Map.get(confirmations, nhash, txId)) {
             case null {
                 #err({
                     code = 404;
                     message = "Transaction not found";
                     details = ?("No transaction exists with ID: " # Nat.toText(txId));
                 })
+            };
+            case (?confirms) {
+                switch (Map.get(transactions, nhash, txId)) {
+                    case null { 
+                        #err({
+                            code = 500;
+                            message = "Data inconsistency error";
+                            details = ?("Transaction exists but data is missing");
+                        }) 
+                    };
+                    case (?transaction) {
+                        let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
+                            confirms,
+                            0,
+                            func(acc : Nat, (p, confirmed) : (Principal, Bool)) : Nat {
+                                if (isOwnerPrincipal(p) and confirmed) { acc + 1 } else { acc }
+                            }
+                        );
+
+                        #ok({
+                            id = txId;
+                            transaction = transaction;
+                            confirmations = confirmationCount;
+                            threshold = threshold;
+                            required = threshold;
+                            executed = false;
+                        })
+                    };
+                }
             }
         }
     };
@@ -395,4 +382,35 @@ actor {
     public query func getOwners() : async [Principal] {
         owners
     };
+
+    public shared query func getTransactions() : async [Types.TransactionDetails] {
+        let txEntries = Map.toArray(transactions);
+        Array.map<(Nat, Types.Transaction), Types.TransactionDetails>(
+            txEntries,
+            func((txId, transaction)) {
+                let confirms_query = Map.get(confirmations, nhash, txId);
+                let confirms : [(Principal, Bool)] = switch(confirms_query) {
+                    case null { [] };
+                    case (?c) { c };
+                };
+                
+                let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
+                    confirms,
+                    0,
+                    func(acc : Nat, (p, confirmed) : (Principal, Bool)) : Nat {
+                        if (isOwnerPrincipal(p) and confirmed) { acc + 1 } else { acc }
+                    }
+                );
+
+                {
+                    id = txId;
+                    transaction = transaction;
+                    confirmations = confirmationCount;
+                    threshold = threshold;
+                    required = threshold;
+                    executed = false;
+                }
+            }
+        )
+    }
 };

@@ -19,16 +19,20 @@ actor class Test() = self {
         getTransactionDetails : shared query (txId: Nat) -> async Result.Result<Types.TransactionDetails, Types.ApiError>;
         isConfirmed : shared query (txId: Nat) -> async Bool;
         getOwners : shared query () -> async [Principal];
+        getTransactions : shared query () -> async [Types.TransactionDetails];
     };
 
     // Test initialization
     public func testInit() : async () {
-        Debug.print("Testing initialization...");
+        Debug.print("Running Init Test: Basic initialization checks...");
         
-        // Test valid initialization
-        let owner1 = Principal.fromText("2vxsx-fae");  // Anonymous principal
-        let owner2 = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");  // Example canister ID
-        let owner3 = Principal.fromText("bd3sg-teaaa-aaaaa-qaaba-cai");  // Test canister ID
+        // Get test canister's actual principal
+        let testPrincipal = Principal.fromActor(self);
+        
+        // Test valid initialization with test canister as owner
+        let owner1 = testPrincipal;
+        let owner2 = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
+        let owner3 = Principal.fromText("bd3sg-teaaa-aaaaa-qaaba-cai");
         let owners = [owner1, owner2, owner3];
         
         let result = await mainCanister.init(owners, 2);
@@ -55,7 +59,7 @@ actor class Test() = self {
 
     // Test queries
     public func testQueries() : async () {
-        Debug.print("Testing query functions...");
+        Debug.print("Running Query Test: Owner list and transaction status checks...");
         
         // Test getOwners
         let owners = await mainCanister.getOwners();
@@ -74,7 +78,7 @@ actor class Test() = self {
 
     // Test owner management functions
     public func testOwnerManagement() : async () {
-        Debug.print("Testing owner management functions...");
+        Debug.print("Running Owner Management Test: Add/Remove/Swap operations...");
         
         // Test adding a new owner
         let newOwner = Principal.fromText("aaaaa-aa");  // IC root principal
@@ -127,7 +131,7 @@ actor class Test() = self {
 
     // Test threshold configuration
     public func testThresholdConfiguration() : async () {
-        Debug.print("Testing threshold configuration...");
+        Debug.print("Running Threshold Test: Valid and invalid threshold changes...");
         
         // Test changing threshold to a valid value
         let validThreshold = 2;
@@ -170,7 +174,7 @@ actor class Test() = self {
 
     // Test transaction proposal
     public func testTransactionProposal() : async () {
-        Debug.print("Testing transaction proposal...");
+        Debug.print("Running Transaction Test: Proposal validation and edge cases...");
 
         // Test case 1: Propose a valid transaction
         let recipient = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
@@ -218,7 +222,7 @@ actor class Test() = self {
 
     
     public func testConfirmTransaction() : async () {
-        Debug.print("Testing confirmTransaction...");
+        Debug.print("Running Confirmation Test: Single/Duplicate confirmations and error handling...");
 
         // Propose a valid transaction first
         let recipient = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
@@ -307,6 +311,52 @@ actor class Test() = self {
         Debug.print("Confirm transaction tests completed!");
     };
 
+    // Updated test for getTransactions method
+    public func testGetTransactions() : async () {
+        Debug.print("Running Transaction History Test: Retrieval and ordering verification...");
+        
+        // First propose a transaction to ensure we have data
+        let recipient = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
+        let proposeResult = await mainCanister.proposeTransaction(recipient, 100);
+        let txId : Nat = switch(proposeResult) {
+            case (#ok(id)) id;
+            case (#err(err)) {
+                Debug.print("✗ Setup failed - could not propose transaction: " # err.message);
+                return;
+            };
+        };
+
+        // Test basic retrieval
+        let transactions = await mainCanister.getTransactions();
+        Debug.print("Retrieved transactions: " # debug_show(transactions));
+        
+        // Verify the proposed transaction exists in the list
+        if (Array.find<Types.TransactionDetails>(transactions, func x = x.id == txId) != null) {
+            Debug.print("✓ New transaction found in list");
+        } else {
+            Debug.print("✗ New transaction missing from list");
+        };
+
+        // Test multiple transactions
+        let proposeResult2 = await mainCanister.proposeTransaction(recipient, 200);
+        let txId2 : Nat = switch(proposeResult2) {
+            case (#ok(id)) id;
+            case (#err(err)) {
+                Debug.print("✗ Setup failed - could not propose second transaction: " # err.message);
+                return;
+            };
+        };
+
+        let transactions2 = await mainCanister.getTransactions();
+        if (transactions2.size() >= 2) {
+            Debug.print("✓ Multiple transactions retrieved");
+        } else {
+            Debug.print("✗ Multiple transactions not found");
+        };
+
+        Debug.print("GetTransactions tests completed!");
+    };
+
     // Run all tests
     public func runAllTests() : async () {
         Debug.print("Running all tests...");
@@ -316,6 +366,7 @@ actor class Test() = self {
         await testThresholdConfiguration();
         await testTransactionProposal();
         await testConfirmTransaction();
+        await testGetTransactions();
         Debug.print("All tests completed!");
     };
 } 

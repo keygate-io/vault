@@ -1,29 +1,21 @@
-import { VStack, HStack, Text, Box } from "@chakra-ui/react";
+import { VStack, HStack, Text, Box, Skeleton } from "@chakra-ui/react";
 import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { InformationalAvatar } from "@/components/ui/avatar/informational-avatar";
-import { useColorModeValue } from "@/components/ui/color-mode";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { selectVaultSigners } from "@/state/signers_slice";
 import { selectCurrentVaultId } from "@/state/session_slice";
-import { selectUsersByIds } from "@/state/users_slice";
 import { selectCurrentUserId } from "@/state/session_slice";
 import { UserGroupIcon } from "@heroicons/react/24/solid";
+import { selectVaultSigners } from "../../state/signers_slice";
+import { useParams } from "react-router-dom";
 
 export default function Signers() {
-  const hoverBgColor = useColorModeValue("gray.100", "whiteAlpha.400");
   const [isOpen, setIsOpen] = useState(false);
-  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const { vaultId } = useParams();
   const currentUserId = useSelector((state) => selectCurrentUserId(state));
-  const signerIds = useSelector((state) =>
-    selectVaultSigners(state, currentVaultId)
-  );
-
-  const signers = useSelector((state) => selectUsersByIds(state, signerIds));
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
+  const signers = useSelector((state) => selectVaultSigners(state, vaultId));
+  const isLoading = useSelector((state) => state.signers.loading);
+  const isAuthenticating = useSelector((state) => state.session.isAuthenticating);
 
   return (
     <>
@@ -53,18 +45,31 @@ export default function Signers() {
             bg={isOpen ? "whiteAlpha.100" : "whiteAlpha.50"}
             alignItems="flex-start"
           >
-            <AvatarGroup>
-              {signers.map((signer) => (
-                <InformationalAvatar
-                  key={signer.id}
-                  size="md"
-                  name={signer.name}
-                  src={signer.avatarUrl}
-                  borderWidth={2}
-                  isCurrentUser={signer.id === currentUserId}
-                />
-              ))}
-            </AvatarGroup>
+            {isAuthenticating || isLoading ? (
+              <AvatarGroup>
+                {[1, 2, 3, 4, 5].map((index) => (
+                  <Skeleton
+                    key={index}
+                    width="40px"
+                    height="40px"
+                    borderRadius="full"
+                  />
+                ))}
+              </AvatarGroup>
+            ) : (
+              <AvatarGroup>
+                {signers.map((signer) => (
+                  <InformationalAvatar
+                    key={signer.id}
+                    size="md"
+                    name={signer.name}
+                    src={signer.avatarUrl}
+                    borderWidth={2}
+                    isCurrentUser={signer.id === currentUserId}
+                  />
+                ))}
+              </AvatarGroup>
+            )}
           </HStack>
         </VStack>
       </Box>

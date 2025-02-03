@@ -2,7 +2,9 @@ import { getMockedCurrentUser } from "@/utils/mockDataGenerator";
 import { getMockedCurrentVault } from "@/utils/mockDataGenerator";
 import { Actor } from "@dfinity/agent";
 import { idlFactory as ManagerIDLFactory } from "../../idl/manager";
+import { idlFactory as VaultIDLFactory } from "../../idl/vault";
 import { GlobalSettings } from "@/constants/global_config";
+import { Principal } from "@dfinity/principal";
 import { injectable, decorate } from "inversify";
 
 // Repository interface
@@ -83,6 +85,23 @@ export class ICPSessionRepository extends ISessionRepository {
     this.ManagerActor = null;
   }
 
+  // Fetch root key for certificate validation during development
+  async fetchRootKey() {
+    if (import.meta.env.VITE_DFX_NETWORK !== "ic") {
+      console.log('Development environment detected, fetching root key...');
+      try {
+        await this.AuthenticatedAgent.fetchRootKey();
+        console.log('Root key fetched successfully');
+      } catch (err) {
+        console.warn('Root key fetch failed:', err);
+        throw new SessionInitializationError(
+          'Failed to fetch root key. Please ensure your local replica is running.',
+          err
+        );
+      }
+    }
+  }
+
   async login() {
     throw new Error("Not implemented");
   }
@@ -95,7 +114,10 @@ export class ICPSessionRepository extends ISessionRepository {
     try {
       const user = await this.ManagerActor.getUser();
       console.log("User obtained successfully");
-      return user;
+      return {
+        id: user.id.toString(),
+        name: user.name,
+      };
     } catch (error) {
       console.error('Error in getCurrentUser:', error);
       throw new SessionInitializationError('Failed to get current user', error);
@@ -111,20 +133,7 @@ export class ICPSessionRepository extends ISessionRepository {
       console.log('Starting session initialization...');
       this.AuthenticatedAgent = agent;
 
-      // Fetch root key for certificate validation during development
-      if (import.meta.env.VITE_DFX_NETWORK !== "ic") {
-        console.log('Development environment detected, fetching root key...');
-        try {
-          await this.AuthenticatedAgent.fetchRootKey();
-          console.log('Root key fetched successfully');
-        } catch (err) {
-          console.warn('Root key fetch failed:', err);
-          throw new SessionInitializationError(
-            'Failed to fetch root key. Please ensure your local replica is running.',
-            err
-          );
-        }
-      }
+      await this.fetchRootKey();
 
       if (!GlobalSettings.session.icp.manager_canister_id) {
         throw new SessionInitializationError('Manager canister ID is not configured');
@@ -146,7 +155,34 @@ export class ICPSessionRepository extends ISessionRepository {
       if (error instanceof SessionInitializationError) {
         throw error;
       }
+
       throw new SessionInitializationError('Failed to initialize session', error);
+    }
+  }
+
+  async focus(vault) {
+    // For now, we'll expect a manager actor to be initialized
+    if (!this.ManagerActor) {
+      throw new SessionInitializationError('ManagerActor not initialized. Call initialize() first.');
+    }
+
+    try {
+      console.log(`Focusing on vault ${vault.canister_id}...`);
+
+      await this.fetchRootKey();
+
+      console.log(`Creating vault actor for ${vault.canister_id}...`);
+
+      this.VaultActor = Actor.createActor(VaultIDLFactory, {
+        canisterId: Principal.fromText(vault.canister_id),
+        agent: this.AuthenticatedAgent,
+      });
+
+      console.log(`Vault ${vault.canister_id} focused successfully`);
+      return { vault };
+    } catch (error) {
+      console.error('Error in focus:', error);
+      throw new SessionInitializationError('Failed to focus vault', error);
     }
   }
 

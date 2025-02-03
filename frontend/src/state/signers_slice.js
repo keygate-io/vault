@@ -11,6 +11,7 @@ export const fetchSignersForVault = createAsyncThunk(
     try {
       const repository = container.get(SIGNER_REPOSITORY);
       const signers = await repository.getSignersByVaultId(vaultId);
+      console.log("Got signers for vault", vaultId, signers);
       return {
         vaultId,
         signers,
@@ -53,7 +54,7 @@ export const removeSignerFromVault = createAsyncThunk(
 // Initial state
 const initialState = {
   signers_map: {},
-  loading: false,
+  loading: true,
   error: null,
 };
 

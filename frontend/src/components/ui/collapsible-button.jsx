@@ -9,6 +9,7 @@ const CollapsibleButton = ({
   activeVariant = "subtle",
   activeColorScheme = "blue",
   size = "md",
+  onOpen,
   m,
   mt,
   mb,
@@ -19,6 +20,14 @@ const CollapsibleButton = ({
   ...rest
 }) => {
   const [open, setOpen] = useState(false);
+
+  const handleToggle = () => {
+    const newOpenState = !open;
+    setOpen(newOpenState);
+    if (newOpenState && onOpen) {
+      onOpen();
+    }
+  };
 
   return (
     <Collapsible.Root open={open}>
@@ -35,7 +44,7 @@ const CollapsibleButton = ({
         <Collapsible.Trigger asChild>
           <Button
             width="fit-content"
-            onClick={() => setOpen(!open)}
+            onClick={handleToggle}
             mb={open ? 2 : 0}
             variant={open ? activeVariant : variant}
             colorScheme={open ? activeColorScheme : colorScheme}

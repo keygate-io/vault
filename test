@@ -11,11 +11,12 @@ echo "🚀 Starting test deployment..."
 
 # Build and deploy all canisters
 echo "📦 Building and deploying all canisters..."
-dfx deploy
+dfx deploy vault
+dfx deploy vault_test
 
 # Run the tests
 echo "🧪 Running tests..."
-dfx canister call backend_test runAllTests
+dfx canister call vault_test runAllTests
 
 # Clean up
 echo "🧹 Cleaning up..."

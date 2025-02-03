@@ -2,6 +2,7 @@ import Principal "mo:base/Principal";
 
 module ManagerTypes {
     public type User = {
+        id: Nat;
         name: Text;
     };
 

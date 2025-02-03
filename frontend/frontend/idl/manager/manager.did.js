@@ -1,5 +1,5 @@
 export const idlFactory = ({ IDL }) => {
-  const User = IDL.Record({ 'id' : IDL.Nat, 'name' : IDL.Text });
+  const User = IDL.Record({ 'name' : IDL.Text });
   const Vault = IDL.Record({
     'name' : IDL.Text,
     'canister_id' : IDL.Principal,

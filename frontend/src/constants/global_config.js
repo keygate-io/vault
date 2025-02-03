@@ -25,7 +25,7 @@ const GlobalSettings = {
     },
     icp: {
       host: "http://localhost:5173",
-      manager_canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai",
+      manager_canister_id: import.meta.env.VITE_CANISTER_ID_MANAGER,
     },
     enabled: true,
   },

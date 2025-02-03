@@ -3,6 +3,7 @@
     "vault": {
       "main": "backend/vault.mo",
       "type": "motoko",
+      "specified_id": "bkyz2-fmaaa-aaaaa-qaaaq-cai",
       "declarations": {
         "output": "frontend/idl/vault",
         "bindings": [
@@ -13,8 +14,20 @@
     "manager": {
       "main": "backend/manager.mo",
       "type": "motoko",
+      "specified_id": "bd3sg-teaaa-aaaaa-qaaba-cai",
       "declarations": {
         "output": "frontend/idl/manager",
+        "bindings": [
+          "js"
+        ]
+      }
+    },
+    "vault_test": {
+      "main": "backend/vault_test.mo",
+      "type": "motoko",
+      "specified_id": "qbsdf-aqaaa-aaaak-qloba-cai",
+      "declarations": {
+        "output": "frontend/idl/vault_test",
         "bindings": [
           "js"
         ]

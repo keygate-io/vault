@@ -59,6 +59,7 @@ export class ICPVaultsRepository {
       acc[index] = {
         id: index,
         name: vault.name,
+        canister_id: vault.canister_id.toString(),
       };
       return acc;
     }, {});

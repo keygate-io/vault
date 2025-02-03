@@ -3,17 +3,18 @@ import Array "mo:base/Array";
 import { nhash } "mo:map/Map";
 import ManagerTypes "manager_types";
 import Principal "mo:base/Principal";
+import Buffer "mo:base/Buffer";
 
 actor Manager {
     private stable let vaults = Map.make<Nat, ManagerTypes.Vault>(nhash, 1, {
         name = "Placeholder Vault";
-        canister_id = Principal.fromText("aaaaa-aa");
+        canister_id = Principal.fromText("bkyz2-fmaaa-aaaaa-qaaaq-cai");
     });
 
-    private stable let owners = Map.new<Nat, Nat>(nhash, 1,  [1,2,3,4,5]);
+    private stable let owners = Map.make<Nat, [Nat]>(nhash, 1,  [1,2,3,4,5]);
 
     public func getUser() : async ManagerTypes.User {
-        return { name = "Travis" };
+        return { id = 1; name = "Travis" };
     };
 
     public func getUsers(_: Nat) : async [ManagerTypes.User] {
@@ -32,7 +33,52 @@ actor Manager {
     };
 
     public func getVaults() : async [ManagerTypes.Vault] {
-        return Map.values<Nat, ManagerTypes.Vault>(vaults);
+        let kv = Map.toArray<Nat, ManagerTypes.Vault>(vaults);
+        let f = func (vault: (Nat, ManagerTypes.Vault)) : ManagerTypes.Vault {
+            vault.1;
+        };
+
+        return Array.map(kv, f);
+    };
+
+    public func getUserById(user_id: Nat) : async ManagerTypes.User {
+        let users = [
+            { id = 1; name = "Travis" },
+            { id = 2; name = "Bob" },
+            { id = 3; name = "Charlie" },
+            { id = 4; name = "Dave" },
+            { id = 5; name = "Eve" },
+            { id = 6; name = "Mallory" },
+            { id = 7; name = "Trent" },
+            { id = 8; name = "Wendy" }
+        ];
+
+        switch user_id {
+            case 1 { users[0] };
+            case 2 { users[1] };
+            case 3 { users[2] };
+            case 4 { users[3] };
+            case 5 { users[4] };
+            case 6 { users[5] };
+            case 7 { users[6] };
+            case 8 { users[7] };
+            case _ { { id = 0; name = "Unknown" } };
+        }
+    };
+
+    public func getOwners(vault_id: Nat) : async [ManagerTypes.User] {
+        let owners_for_vault = Map.get<Nat, [Nat]>(owners, nhash, vault_id);
+        switch (owners_for_vault) {
+            case null { [] };
+            case (?owner_ids) {
+                var users : [ManagerTypes.User] = [];
+                for (owner in owner_ids.vals()) {
+                    let user = await getUserById(owner);
+                    users := Array.append(users, [user]);
+                };
+                users
+            };
+        }
     };
 
     public func getVault(_: Nat) : async ?ManagerTypes.Vault {
@@ -46,11 +92,11 @@ actor Manager {
 
     public func getSigners(_: Nat) : async [ManagerTypes.User] {
         return [
-            { name = "Travis" },
-            { name = "Bob" },
-            { name = "Charlie" },
-            { name = "Dave" },
-            { name = "Eve" }
+            { id = 1; name = "Travis" },
+            { id = 2; name = "Bob" },
+            { id = 3; name = "Charlie" },
+            { id = 4; name = "Dave" },
+            { id = 5; name = "Eve" }
         ];
     };
 }

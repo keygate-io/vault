@@ -5,6 +5,9 @@ import {
   generateDefaultTransactionTraits,
 } from "@/utils/mockDataGenerator";
 import { getRandomMockedVaultId } from "../utils/mockDataGenerator";
+import { injectable, inject, decorate } from "inversify";
+import { SESSION_REPOSITORY } from "./session";
+
 
 // Helper function to create a transaction object
 export function createTransaction(params = {}) {
@@ -63,7 +66,7 @@ export class TransactionRepository {
 const mockedTransactions = generateMockTransactions();
 
 // In-memory implementation of the repository
-class InMemoryTransactionRepository extends TransactionRepository {
+export class InMemoryTransactionRepository extends TransactionRepository {
   constructor() {
     super();
     this.transactions = {}; // Object: vaultId -> transactionId -> Transaction
@@ -169,4 +172,101 @@ class InMemoryTransactionRepository extends TransactionRepository {
   }
 }
 
-export { InMemoryTransactionRepository };
+export class ICPTransactionRepository extends TransactionRepository {
+  constructor(sessionRepository) {
+    super();
+    this.sessionRepository = sessionRepository;
+  }
+
+  async getByVaultId(vault_id) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      const transactions = await managerActor.getTransactions(vault_id);
+      console.log("Transactions obtained successfully");
+      return transactions.map((tx) => ({
+        id: tx.id.toString(),
+        vault_id: vault_id,
+        recipient: tx.recipient,
+        amount: Number(tx.amount),
+        isExecuted: tx.status === "executed",
+        isSuccessful: tx.status === "executed",
+      }));
+    } catch (error) {
+      console.error('Error in getByVaultId:', error);
+      throw error;
+    }
+  }
+
+  async create(vault_id, transaction) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      const result = await managerActor.createTransaction(vault_id, {
+        recipient: transaction.recipient,
+        amount: BigInt(transaction.amount),
+      });
+      
+      return {
+        id: result.id.toString(),
+        vault_id: vault_id,
+        recipient: transaction.recipient,
+        amount: transaction.amount,
+        isExecuted: false,
+        isSuccessful: false,
+      };
+    } catch (error) {
+      console.error('Error in create:', error);
+      throw error;
+    }
+  }
+
+  async execute(vault_id, transaction_id) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      await managerActor.executeTransaction(vault_id, BigInt(transaction_id));
+      return {
+        id: transaction_id,
+        vault_id: vault_id,
+        isExecuted: true,
+        isSuccessful: true,
+      };
+    } catch (error) {
+      console.error('Error in execute:', error);
+      throw error;
+    }
+  }
+
+  async getByStatus(vault_id, status) {
+    const transactions = await this.getByVaultId(vault_id);
+    
+    return transactions.filter((tx) => {
+      switch (status) {
+        case "pending":
+          return !tx.isExecuted;
+        case "executed":
+          return tx.isExecuted && tx.isSuccessful;
+        case "failed":
+          return !tx.isSuccessful;
+        default:
+          return false;
+      }
+    });
+  }
+}
+
+decorate(injectable(), InMemoryTransactionRepository);
+decorate(injectable(), ICPTransactionRepository);
+decorate(inject(SESSION_REPOSITORY), ICPTransactionRepository, 0);
+
+export const TRANSACTIONS_REPOSITORY = Symbol.for("TRANSACTIONS_REPOSITORY");

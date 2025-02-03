@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getRepository } from "@/constants/module_config";
+import { container } from "@/inversify.config";
+import { TRANSACTIONS_REPOSITORY } from "@/repository/transactions";
 import { createSelector } from "reselect";
 import { toaster } from "@/components/ui/toaster";
 
@@ -8,7 +9,7 @@ export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
   async (vaultId, { rejectWithValue }) => {
     try {
-      const repository = getRepository("transactions");
+      const repository = container.get(TRANSACTIONS_REPOSITORY);
       const transactions = await repository.getAllTxsForVaultId(vaultId);
       return transactions;
     } catch (error) {
@@ -21,7 +22,7 @@ export const fetchTransactions = createAsyncThunk(
 export const createTransaction = createAsyncThunk(
   "transactions/createTransaction",
   async (transactionData) => {
-    const repository = getRepository("transactions");
+    const repository = container.get(TRANSACTIONS_REPOSITORY);
     const transaction = await repository.create(transactionData);
     return transaction;
   }
@@ -40,7 +41,7 @@ export const executeTransaction = createAsyncThunk(
         );
       }
 
-      const repository = getRepository("transactions");
+      const repository = container.get(TRANSACTIONS_REPOSITORY);
       const executedTransaction = await repository.execute(
         vaultId,
         transactionId
