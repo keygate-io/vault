@@ -83,6 +83,7 @@ export class ICPSessionRepository extends ISessionRepository {
     this.AuthenticatedAgent = null;
     this.VaultActor = null;
     this.ManagerActor = null;
+    this.FocusedVault = null;
   }
 
   // Fetch root key for certificate validation during development
@@ -112,14 +113,27 @@ export class ICPSessionRepository extends ISessionRepository {
     }
 
     try {
-      const user = await this.ManagerActor.getUser();
-      console.log("User obtained successfully");
+      const result = await this.ManagerActor.getOrCreateUser();
+      console.log("User result obtained:", result);
+      
+      // Check if result contains an error
+      if (result.err) {
+        throw {
+          message: result.err || "Failed to get current user",
+          isApiError: true
+        };
+      }
+
+      const user = result.ok;
       return {
-        id: user.id.toString(),
+        id: user.principal.toString(),
         name: user.name,
       };
     } catch (error) {
       console.error('Error in getCurrentUser:', error);
+      if (error.isApiError) {
+        throw error;
+      }
       throw new SessionInitializationError('Failed to get current user', error);
     }
   }
@@ -143,6 +157,7 @@ export class ICPSessionRepository extends ISessionRepository {
         canisterId: GlobalSettings.session.icp.manager_canister_id,
         agent: this.AuthenticatedAgent,
       });
+
 
       const user = await this.getCurrentUser();
       
@@ -178,6 +193,9 @@ export class ICPSessionRepository extends ISessionRepository {
         agent: this.AuthenticatedAgent,
       });
 
+      // Store the focused vault
+      this.FocusedVault = vault;
+
       console.log(`Vault ${vault.canister_id} focused successfully`);
       return { vault };
     } catch (error) {
@@ -187,11 +205,21 @@ export class ICPSessionRepository extends ISessionRepository {
   }
 
   async getCurrentVault() {
-    throw new Error("ICPSessionRepository does not support getCurrentVault");
+    if (!this.FocusedVault) {
+      throw new SessionInitializationError('No vault is currently focused');
+    }
+    return this.FocusedVault;
   }
 
   async fetchSession() {
     throw new Error("ICPSessionRepository does not support fetchSession");
+  }
+
+  async logout() {
+    this.AuthenticatedAgent = null;
+    this.VaultActor = null;
+    this.ManagerActor = null;
+    this.FocusedVault = null;
   }
 }
 

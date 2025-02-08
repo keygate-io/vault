@@ -1,102 +1,131 @@
 import Map "mo:map/Map";
 import Array "mo:base/Array";
-import { nhash } "mo:map/Map";
+import { nhash; phash } "mo:map/Map";
 import ManagerTypes "manager_types";
 import Principal "mo:base/Principal";
+import Cycles = "mo:base/ExperimentalCycles";
+import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
+import Vault "vault";
+shared actor class Manager() {
+    type VaultCanister = Vault.Vault;
 
-actor Manager {
-    private stable let vaults = Map.make<Nat, ManagerTypes.Vault>(nhash, 1, {
-        name = "Placeholder Vault";
-        canister_id = Principal.fromText("bkyz2-fmaaa-aaaaa-qaaaq-cai");
-    });
+    private stable var nextVaultId : Nat = 0;
+    private stable let vaults = Map.new<Nat, ManagerTypes.Vault>();
+    private stable let vaultOwners = Map.new<Nat, [Principal]>();
 
-    private stable let owners = Map.make<Nat, [Nat]>(nhash, 1,  [1,2,3,4,5]);
+    // User management
+    private stable let users = Map.new<Principal, ManagerTypes.User>();
 
-    public func getUser() : async ManagerTypes.User {
-        return { id = 1; name = "Travis" };
-    };
+    // Public API
+    public shared ({ caller }) func createVault(name : Text) : async Result.Result<ManagerTypes.Vault, Text> {
+        Cycles.add<system>(80_000_000_000);
+        
+        let vaultId = nextVaultId;
 
-    public func getUsers(_: Nat) : async [ManagerTypes.User] {
-        let users = [
-            { id = 1; name = "Travis" },
-            { id = 2; name = "Bob" },
-            { id = 3; name = "Charlie" },
-            { id = 4; name = "Dave" },
-            { id = 5; name = "Eve" },
-            { id = 6; name = "Mallory" },
-            { id = 7; name = "Trent" },
-            { id = 8; name = "Wendy" }
-        ];
+        let vault_canister = await Vault.Vault([caller], 1);
+        let canister_id = Principal.fromActor(vault_canister);
 
-        return users;
-    };
-
-    public func getVaults() : async [ManagerTypes.Vault] {
-        let kv = Map.toArray<Nat, ManagerTypes.Vault>(vaults);
-        let f = func (vault: (Nat, ManagerTypes.Vault)) : ManagerTypes.Vault {
-            vault.1;
+        let newVault : ManagerTypes.Vault = {
+            name = name;
+            canister_id = canister_id;
         };
 
-        return Array.map(kv, f);
+        switch (Map.get(users, phash, caller)) {
+            case (?user) {
+                Map.set(vaults, nhash, vaultId, newVault);
+                Map.set(vaultOwners, nhash, vaultId, [caller]);
+                nextVaultId += 1;
+                #ok(newVault)
+            };
+            case null #err("User not registered");
+        }
+
     };
 
-    public func getUserById(user_id: Nat) : async ManagerTypes.User {
-        let users = [
-            { id = 1; name = "Travis" },
-            { id = 2; name = "Bob" },
-            { id = 3; name = "Charlie" },
-            { id = 4; name = "Dave" },
-            { id = 5; name = "Eve" },
-            { id = 6; name = "Mallory" },
-            { id = 7; name = "Trent" },
-            { id = 8; name = "Wendy" }
-        ];
-
-        switch user_id {
-            case 1 { users[0] };
-            case 2 { users[1] };
-            case 3 { users[2] };
-            case 4 { users[3] };
-            case 5 { users[4] };
-            case 6 { users[5] };
-            case 7 { users[6] };
-            case 8 { users[7] };
-            case _ { { id = 0; name = "Unknown" } };
+    public query func getVault(vaultId : Nat) : async Result.Result<ManagerTypes.Vault, Text> {
+        switch (Map.get(vaults, nhash, vaultId)) {
+            case (?vault) #ok(vault);
+            case null #err("Vault not found");
         }
     };
 
-    public func getOwners(vault_id: Nat) : async [ManagerTypes.User] {
-        let owners_for_vault = Map.get<Nat, [Nat]>(owners, nhash, vault_id);
-        switch (owners_for_vault) {
-            case null { [] };
-            case (?owner_ids) {
-                var users : [ManagerTypes.User] = [];
-                for (owner in owner_ids.vals()) {
-                    let user = await getUserById(owner);
-                    users := Array.append(users, [user]);
+    public query func getVaults() : async [ManagerTypes.Vault] {
+        let vaultEntries = Map.toArray(vaults);
+        Array.map(vaultEntries, func ((id, vault) : (Nat, ManagerTypes.Vault)) : ManagerTypes.Vault { vault })
+    };
+
+    public shared ({ caller }) func addOwner(vaultId : Nat, newOwner : Principal) : async Result.Result<(), Text> {
+        switch (Map.get(vaultOwners, nhash, vaultId)) {
+            case (?owners) {
+                if (Array.find<Principal>(owners, func x = Principal.equal(x, newOwner)) != null) {
+                    return #err("User already an owner");
                 };
-                users
+                let newOwners = Array.append(owners, [newOwner]);
+                Map.set(vaultOwners, nhash, vaultId, newOwners);
+                #ok
+            };
+            case null #err("Vault not found");
+        }
+    };
+
+    public shared ({ caller }) func registerUser(name : Text) : async Result.Result<ManagerTypes.User, Text> {
+        let newUser : ManagerTypes.User = {
+            name = name;
+            principal = caller;
+        };
+
+        ignore Map.put(users, phash, caller, newUser);
+        #ok(newUser)
+    };
+
+    public func registerUserWithPrincipal(principal : Principal, name : Text) : async Result.Result<ManagerTypes.User, Text> {
+        let newUser : ManagerTypes.User = {
+            name = name;
+            principal = principal;
+        };
+
+        ignore Map.put(users, phash, principal, newUser);
+        #ok(newUser)
+    };
+
+    public shared ({ caller }) func getOrCreateUser() : async Result.Result<ManagerTypes.User, Text> {
+        switch (Map.get(users, phash, caller)) {
+            case (?user) #ok(user);
+            case null {
+                let result = await registerUserWithPrincipal(caller, "Unknown");
+                result
             };
         }
     };
 
-    public func getVault(_: Nat) : async ?ManagerTypes.Vault {
-        let vault = Map.get<Nat, ManagerTypes.Vault>(vaults, nhash, 0);
-        if (vault == null) {
-            return null;
+    public shared ({ caller }) func getUser() : async Result.Result<ManagerTypes.User, Text> {
+        switch (Map.get(users, phash, caller)) {
+            case (?user) #ok(user);
+            case null #err("User not found");
         };
-
-        return vault;
     };
 
-    public func getSigners(_: Nat) : async [ManagerTypes.User] {
-        return [
-            { id = 1; name = "Travis" },
-            { id = 2; name = "Bob" },
-            { id = 3; name = "Charlie" },
-            { id = 4; name = "Dave" },
-            { id = 5; name = "Eve" }
-        ];
+    public query func getUsers() : async [ManagerTypes.User] {
+        let userEntries = Map.toArray(users);
+        Array.map(userEntries, func ((principal, user) : (Principal, ManagerTypes.User)) : ManagerTypes.User { user })
+    };
+
+    public query func getOwners(vaultId : Nat) : async Result.Result<[ManagerTypes.User], Text> {
+        switch (Map.get(vaultOwners, nhash, vaultId)) {
+            case (?ownerPrincipals) {
+                let owners = Array.mapFilter<Principal, ManagerTypes.User>(
+                    ownerPrincipals,
+                    func (principal) = Map.get(users, phash, principal)
+                );
+                #ok(owners)
+            };
+            case null #err("Vault not found");
+        }
+    };
+
+    public shared ({ caller }) func executeTransaction(vaultId : Nat, txId : Nat) : async Result.Result<(), Text> {
+        // Implementation would interact with the actual vault canister
+        #err("Not implemented")
     };
 }

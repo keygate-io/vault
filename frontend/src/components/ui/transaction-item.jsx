@@ -7,7 +7,7 @@ import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
 import { SentimentTransactionBadge } from "@/components/ui/transaction-badge";
 import PropTypes from "prop-types";
-import floatPrecision from "@/utils/floatPrecision";
+import { floatPrecision } from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {

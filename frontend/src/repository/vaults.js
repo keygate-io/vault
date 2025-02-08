@@ -66,6 +66,29 @@ export class ICPVaultsRepository {
     console.log("Vaults obtained successfully");
     return mapped_vaults;
   }
+
+  async create({ name }) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    const result = await managerActor.createVault(name);
+    
+    if (result.err) {
+      const error = new Error(result.err);
+      error.isApiError = true;
+      throw error;
+    }
+
+    const vault = result.ok;
+    // Map the response to match our frontend model
+    return {
+      id: Object.keys(await this.getAll()).length, // Get the next available ID
+      name: vault.name,
+      canister_id: vault.canister_id.toString(),
+    };
+  }
 }
 
 decorate(injectable(), ICPVaultsRepository);

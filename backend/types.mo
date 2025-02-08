@@ -13,6 +13,7 @@ module Types {
 
     // Core transaction type
     public type Transaction = {
+        id : Nat;
         amount : Tokens;               // Amount to send (e.g., { e8s = 100_000_000 } for 1 ICP)
         to : AccountIdentifier;        // Recipient's account ID (Blob)
         created_at_time : ?Time.Time;  // Optional timestamp for deduplication

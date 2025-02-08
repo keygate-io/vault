@@ -1,6 +1,6 @@
 import { VStack, Box, HStack, Text, Link } from "@chakra-ui/react";
 import { PlusIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BalanceDisplay from "@/components/ui/balance-display";
 import CreateTransaction from "@/components/ui/create-transaction";
@@ -23,6 +23,7 @@ function Vault() {
   const vault = useSelector((state) => selectVaultById(state, vaultId));
   const navigate = useNavigate();
   const createTransactionRef = useRef(null);
+  const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
 
   useEffect(() => {
     if (vault) {
@@ -37,9 +38,10 @@ function Vault() {
   }, [vault]);
 
   const handleCollapsibleOpen = () => {
+    setIsCollapsibleOpen(true);
     setTimeout(() => {
       if (createTransactionRef.current) {
-        const yOffset = -100; // Adjust this value to control how much space to leave at the top
+        const yOffset = -100;
         const element = createTransactionRef.current;
         const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
         
@@ -48,7 +50,21 @@ function Vault() {
           behavior: 'smooth'
         });
       }
-    }, 100); // Small delay to ensure the content is rendered
+    }, 100);
+  };
+
+  const handleCollapsibleClose = () => {
+    setIsCollapsibleOpen(false);
+  };
+
+  const handleTransactionSuccess = (onClose) => {
+    handleCollapsibleClose();
+    onClose();
+  };
+
+  const handleTransactionError = () => {
+    setIsCollapsibleOpen(true);
+    handleCollapsibleOpen();
   };
 
   return (
@@ -86,10 +102,16 @@ function Vault() {
             size="sm"
             colorScheme="gray"
             onOpen={handleCollapsibleOpen}
+            isOpen={isCollapsibleOpen}
+            onClose={handleCollapsibleClose}
           >
             {({ onClose }) => (
               <div ref={createTransactionRef}>
-                <CreateTransaction onClose={onClose} />
+                <CreateTransaction 
+                  onClose={() => handleTransactionSuccess(onClose)} 
+                  vaultId={vaultId}
+                  onError={handleTransactionError}
+                />
               </div>
             )}
           </CollapsibleButton>

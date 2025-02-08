@@ -3,6 +3,7 @@ import { getRepository } from "@/constants/module_config";
 import { createSelector } from "reselect";
 import { container } from "../inversify.config";
 import { VAULTS_REPOSITORY } from "@/repository/vaults";
+import { toaster } from "@/components/ui/toaster";
 
 // Async thunks
 export const fetchVaultById = createAsyncThunk(
@@ -31,10 +32,36 @@ export const fetchVaults = createAsyncThunk(
   }
 );
 
+export const createVault = createAsyncThunk(
+  "vaults/createVault",
+  async ({ name }, { rejectWithValue }) => {
+    try {
+      const repository = container.get(VAULTS_REPOSITORY);
+      console.log("Creating vault with name:", name);
+      const vault = await repository.create({ name });
+      
+      toaster.create({
+        description: "Vault created successfully!",
+        type: "success",
+      });
+      return vault;
+    } catch (error) {
+      console.error("Error in createVault", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to create vault",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   vaults_map: {},
   loading: false,
+  creating: false,
   error: null,
 };
 
@@ -72,6 +99,20 @@ export const vaultsSlice = createSlice({
       .addCase(fetchVaults.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Create vault cases
+      .addCase(createVault.pending, (state) => {
+        state.creating = true;
+        state.error = null;
+      })
+      .addCase(createVault.fulfilled, (state, action) => {
+        state.creating = false;
+        state.error = null;
+        state.vaults_map[action.payload.id] = action.payload;
+      })
+      .addCase(createVault.rejected, (state, action) => {
+        state.creating = false;
+        state.error = action.payload;
       });
   },
 });
@@ -93,5 +134,7 @@ export const selectVaultBalance = createSelector(
   [selectVaultById, (_, vaultId) => vaultId],
   (vault) => vault?.balance || 0
 );
+
+export const selectIsCreatingVault = (state) => state.vaults.creating;
 
 export const { reducer: vaultsReducer } = vaultsSlice;

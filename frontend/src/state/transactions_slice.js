@@ -5,6 +5,24 @@ import { createSelector } from "reselect";
 import { toaster } from "@/components/ui/toaster";
 
 // Async thunks
+export const fetchAllTransactions = createAsyncThunk(
+  "transactions/fetchAllTransactions",
+  async (_, { rejectWithValue }) => {
+    try {
+      const repository = container.get(TRANSACTIONS_REPOSITORY);
+      const transactions = await repository.getAll();
+      return transactions;
+    } catch (error) {
+      console.error("Error in fetchAllTransactions", error);
+      toaster.create({
+        description: error.message || "Failed to fetch all transactions",
+        type: "error",
+      });
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
   async (vaultId, { rejectWithValue }) => {
@@ -14,6 +32,10 @@ export const fetchTransactions = createAsyncThunk(
       return transactions;
     } catch (error) {
       console.error("Error in fetchTransactions", error);
+      toaster.create({
+        description: error.message || "Failed to fetch transactions",
+        type: "error",
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -21,10 +43,24 @@ export const fetchTransactions = createAsyncThunk(
 
 export const createTransaction = createAsyncThunk(
   "transactions/createTransaction",
-  async (transactionData) => {
-    const repository = container.get(TRANSACTIONS_REPOSITORY);
-    const transaction = await repository.create(transactionData);
-    return transaction;
+  async ({ transaction }, { rejectWithValue }) => {
+    try {
+      const repository = container.get(TRANSACTIONS_REPOSITORY);
+      const createdTransaction = await repository.create(transaction);
+      toaster.create({
+        description: "Transaction proposed successfully!",
+        type: "success",
+      });
+      return createdTransaction;
+    } catch (error) {
+      console.error("Error in createTransaction", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to create transaction",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -33,9 +69,17 @@ export const executeTransaction = createAsyncThunk(
   async ({ vaultId, transactionId }, { rejectWithValue }) => {
     try {
       if (!vaultId) {
+        toaster.create({
+          description: "Missing vault ID",
+          type: "error",
+        });
         return rejectWithValue("executeTransaction missing param vaultId");
       }
       if (!transactionId) {
+        toaster.create({
+          description: "Missing transaction ID",
+          type: "error",
+        });
         return rejectWithValue(
           "executeTransaction missing param transactionId"
         );
@@ -54,6 +98,11 @@ export const executeTransaction = createAsyncThunk(
       return executedTransaction;
     } catch (error) {
       console.error("Error in executeTransaction", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to execute transaction",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -62,6 +111,7 @@ export const executeTransaction = createAsyncThunk(
 const initialState = {
   transactions_list: [],
   fetchLoading: false,
+  fetchAllLoading: false,
   createLoading: false,
   error: null,
   executeLoadingStates: {}, // Track individual execution loading states
@@ -73,6 +123,24 @@ const transactionsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch all transactions
+      .addCase(fetchAllTransactions.pending, (state) => {
+        state.fetchAllLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllTransactions.fulfilled, (state, action) => {
+        state.fetchAllLoading = false;
+        state.transactions_list = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAllTransactions.rejected, (state, action) => {
+        state.fetchAllLoading = false;
+        state.error = action.payload;
+        toaster.create({
+          description: action.payload || "Failed to fetch all transactions",
+          type: "error",
+        });
+      })
       // Fetch transactions
       .addCase(fetchTransactions.pending, (state) => {
         state.fetchLoading = true;
@@ -86,6 +154,10 @@ const transactionsSlice = createSlice({
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.fetchLoading = false;
         state.error = action.payload;
+        toaster.create({
+          description: action.payload || "Failed to fetch transactions",
+          type: "error",
+        });
       })
       // Create transaction
       .addCase(createTransaction.pending, (state) => {

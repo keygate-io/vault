@@ -6,52 +6,25 @@ import Types "types";
 import Time "mo:base/Time";
 import Map "mo:map/Map";
 import { nhash } "mo:map/Map";
+import Error "mo:base/Error";
 
 
-actor {
+actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     // State variables
-    private stable var owners : [Principal] = [];
-    private stable var isOwner : [(Principal, Bool)] = [];
+    private stable var owners : [Principal] = initOwners;
+    private stable var isOwner : [(Principal, Bool)] = Array.map<Principal, (Principal, Bool)>(initOwners, func(p: Principal) : (Principal, Bool) {
+        (p, true)
+    });
 
     // State variables
     private stable var transactionCount : Nat = 0;
     private stable var transactions = Map.new<Nat, Types.Transaction>();
     private stable var confirmations = Map.new<Nat, [(Principal, Bool)]>();
 
-    private stable var threshold : Nat = 1;
-
-    // Constructor
-    public shared({ caller }) func init(newOwners : [Principal], threshold_value : Nat) : async Result.Result<(), Types.ApiError> {
-        // Validate inputs
-        if (newOwners.size() == 0) {
-            return #err({
-                code = 400;
-                message = "Owners array cannot be empty";
-                details = null;
-            });
-        };
-        
-        if (threshold_value == 0 or threshold_value > newOwners.size()) {
-            return #err({
-                code = 400;
-                message = "Invalid threshold";
-                details = null;
-            });
-        };
-
-        // Initialize state
-        owners := newOwners;
-        threshold := threshold_value;
-        // Initialize isOwner array
-        isOwner := Array.map<Principal, (Principal, Bool)>(newOwners, func(p: Principal) : (Principal, Bool) {
-            (p, true)
-        });
-
-        #ok()
-    };
+    private stable var threshold : Nat = initThreshold;
 
     // Core Transaction Management
-    public shared({ caller }) func proposeTransaction(to: Principal, value: Nat) : async Result.Result<Nat, Types.ApiError> {
+    public shared({ caller }) func proposeTransaction(to: Principal, value: Nat) : async Result.Result<Types.Transaction, Types.ApiError> {
         if (not isOwnerPrincipal(caller)) {
             return #err({
                 code = 403;
@@ -71,23 +44,23 @@ actor {
         let toAccount = Principal.toBlob(to);
 
         let transaction : Types.Transaction = {
+            id = transactionCount;
             amount = { e8s = value };
             to = toAccount;
             created_at_time = ?Time.now();
         };
 
         // Assign the next transaction ID and update state
-        let txId = transactionCount;
         transactionCount += 1;
 
         // Add the new transaction to the ledger
-        Map.set(transactions, nhash, txId, transaction);
+        Map.set(transactions, nhash, transaction.id, transaction);
 
         // Initialize confirmations with Map
-        Map.set(confirmations, nhash, txId, [(caller, true)]);
+        Map.set(confirmations, nhash, transaction.id, [(caller, true)]);
 
         // Return the transaction ID
-        #ok(txId)
+        #ok(transaction)
     };
 
     public shared({ caller }) func confirmTransaction(txId: Nat) : async Result.Result<(), Types.ApiError> {
@@ -381,6 +354,10 @@ actor {
 
     public query func getOwners() : async [Principal] {
         owners
+    };
+
+    public query func getCanisterId() : async Principal {
+        Principal.fromActor(this)
     };
 
     public shared query func getTransactions() : async [Types.TransactionDetails] {

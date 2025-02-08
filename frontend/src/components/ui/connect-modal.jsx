@@ -22,7 +22,7 @@ const CustomConnectButton = ({ onClick, disabled, loading }) => {
       fontSize="md"
       fontWeight="semibold"
     >
-      {loading ? 'Loading...' : 'Connect with NFID'}
+      {loading ? 'Connecting...' : 'Connect with NFID'}
     </Button>
   );
 };

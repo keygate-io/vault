@@ -7,7 +7,8 @@ import {
 import { getRandomMockedVaultId } from "../utils/mockDataGenerator";
 import { injectable, inject, decorate } from "inversify";
 import { SESSION_REPOSITORY } from "./session";
-
+import { Principal } from "@dfinity/principal";
+import { e8sToFloat } from "@/utils/floatPrecision";
 
 // Helper function to create a transaction object
 export function createTransaction(params = {}) {
@@ -26,10 +27,6 @@ export function createTransaction(params = {}) {
 // Repository interface (abstract class)
 export class TransactionRepository {
   async getAll(vault_id) {
-    throw new Error("Not implemented");
-  }
-
-  async getByVaultId(vault_id) {
     throw new Error("Not implemented");
   }
 
@@ -178,49 +175,86 @@ export class ICPTransactionRepository extends TransactionRepository {
     this.sessionRepository = sessionRepository;
   }
 
-  async getByVaultId(vault_id) {
-    const managerActor = this.sessionRepository.ManagerActor;
-    if (!managerActor) {
-      throw new Error("Manager actor not initialized");
+  async getAll() {
+    const vaultActor = this.sessionRepository.VaultActor;
+    const focusedVault = this.sessionRepository.FocusedVault;
+    
+    if (!vaultActor) {
+      throw new Error("Vault actor not initialized");
+    }
+
+    if (!focusedVault) {
+      throw new Error("No vault is currently focused");
     }
 
     try {
-      const transactions = await managerActor.getTransactions(vault_id);
-      console.log("Transactions obtained successfully");
-      return transactions.map((tx) => ({
+      const transactions = await vaultActor.getTransactions();
+      console.log("Raw transactions result:", transactions);
+      
+      const formattedTransactions = transactions.map((tx) => ({
         id: tx.id.toString(),
-        vault_id: vault_id,
-        recipient: tx.recipient,
-        amount: Number(tx.amount),
-        isExecuted: tx.status === "executed",
-        isSuccessful: tx.status === "executed",
+        vault_id: focusedVault.canister_id,
+        recipient: Principal.fromUint8Array(tx.transaction.to).toString(),
+        amount: e8sToFloat(tx.transaction.amount),
+        isExecuted: tx.executed,
+        isSuccessful: tx.executed,
+        confirmations: tx.confirmations,
+        threshold: tx.threshold,
       }));
+
+      console.log("Formatted transactions:", formattedTransactions);
+      return formattedTransactions;
     } catch (error) {
-      console.error('Error in getByVaultId:', error);
+      console.error('Error in getAll:', error);
       throw error;
     }
   }
 
-  async create(vault_id, transaction) {
-    const managerActor = this.sessionRepository.ManagerActor;
-    if (!managerActor) {
-      throw new Error("Manager actor not initialized");
+  async create(transaction) {
+    const vaultActor = this.sessionRepository.VaultActor;
+    const focusedVault = this.sessionRepository.FocusedVault;
+    if (!vaultActor) {
+      throw new Error("Vault actor not initialized");
+    }
+
+    if (!focusedVault) {
+      throw new Error("No current focused vault");
     }
 
     try {
-      const result = await managerActor.createTransaction(vault_id, {
-        recipient: transaction.recipient,
-        amount: BigInt(transaction.amount),
-      });
-      
-      return {
-        id: result.id.toString(),
-        vault_id: vault_id,
-        recipient: transaction.recipient,
-        amount: transaction.amount,
+      console.log(transaction);
+
+      const result = await vaultActor.proposeTransaction(Principal.fromText(transaction.recipient), transaction.amount.e8s);
+
+      // Check if result contains an error
+      if (result.err) {
+        throw {
+          message: result.err.message || "Failed to propose transaction",
+          code: result.err.code,
+          isApiError: true
+        };
+      }
+
+      const tx = result.ok;
+
+      console.log("Proposed transaction successfully");
+      console.log("Result", tx);
+
+
+      console.log("Transaction amount type:", typeof tx.amount);
+      const parsedTx = {
+        id: tx.id.toString(),
+        vault_id: focusedVault.canister_id,
+        recipient: Principal.fromUint8Array(tx.to).toString(),
+        amount: e8sToFloat(tx.amount),
+        created_at_time: tx.created_at_time.toString(),
         isExecuted: false,
         isSuccessful: false,
       };
+
+      console.log("Parsed transaction", parsedTx);
+
+      return parsedTx;
     } catch (error) {
       console.error('Error in create:', error);
       throw error;
@@ -234,7 +268,17 @@ export class ICPTransactionRepository extends TransactionRepository {
     }
 
     try {
-      await managerActor.executeTransaction(vault_id, BigInt(transaction_id));
+      const result = await managerActor.executeTransaction(vault_id, BigInt(transaction_id));
+      
+      // Check if result contains an error
+      if (result && result.err) {
+        throw {
+          message: result.err.message || "Failed to execute transaction",
+          code: result.err.code,
+          isApiError: true
+        };
+      }
+
       return {
         id: transaction_id,
         vault_id: vault_id,
@@ -248,7 +292,7 @@ export class ICPTransactionRepository extends TransactionRepository {
   }
 
   async getByStatus(vault_id, status) {
-    const transactions = await this.getByVaultId(vault_id);
+    const transactions = await this.getAll();
     
     return transactions.filter((tx) => {
       switch (status) {

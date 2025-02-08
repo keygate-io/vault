@@ -2,8 +2,8 @@ import Principal "mo:base/Principal";
 
 module ManagerTypes {
     public type User = {
-        id: Nat;
         name: Text;
+        principal: Principal;
     };
 
     public type Vault = {

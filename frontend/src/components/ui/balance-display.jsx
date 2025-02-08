@@ -1,5 +1,5 @@
 import { Text, HStack } from "@chakra-ui/react";
-import floatPrecision from "@/utils/floatPrecision";
+import { floatPrecision } from "@/utils/floatPrecision";
 import { useSelector } from "react-redux";
 import { selectVaultBalance } from "@/state/vaults_slice";
 import { selectCurrentVaultId } from "@/state/session_slice";

@@ -3,6 +3,8 @@ import {
   generateMockUserId,
   generateMockUsers,
 } from "@/utils/mockDataGenerator";
+import { decorate, injectable, inject } from "inversify";
+import { SESSION_REPOSITORY } from "@/repository/session";
 
 export class User {
   constructor(params = {}) {
@@ -99,3 +101,60 @@ class InMemoryUserRepository extends UserRepository {
 }
 
 export { InMemoryUserRepository };
+
+export class ICPUserRepository extends UserRepository {
+  constructor(sessionRepository) {
+    super();
+    this.sessionRepository = sessionRepository;
+  }
+
+  async getAll() {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      const users = await managerActor.getUsers();
+      console.log("Users:", users);
+      return users.map(user => 
+        new User({
+          id: user.principal.toString(),
+          name: user.name
+        })
+      );
+    } catch (error) {
+      console.error('Error getting users:', error);
+      throw error;
+    }
+  }
+
+  async getById(id) {
+    const managerActor = this.sessionRepository.ManagerActor;
+    if (!managerActor) {
+      throw new Error("Manager actor not initialized");
+    }
+
+    try {
+      const result = await managerActor.getUser();
+      if (result.err) {
+        throw new Error(result.err);
+      }
+      const user = result.ok;
+      return new User({
+        id: user.principal.toString(),
+        name: user.name,
+        address: user.principal.toString()
+      });
+    } catch (error) {
+      console.error('Error getting user:', error);
+      throw error;
+    }
+  }
+
+}
+
+decorate(injectable(), ICPUserRepository);
+decorate(inject(SESSION_REPOSITORY), ICPUserRepository, 0);
+
+export const USER_REPOSITORY = Symbol.for("USER_REPOSITORY");

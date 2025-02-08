@@ -3,6 +3,9 @@ import { InboxIcon } from "@heroicons/react/24/solid";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import FilterButtonGroup from "@/components/ui/filter-button-group";
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAllTransactions } from "@/state/transactions_slice";
+import { selectIsAuthenticated, selectCurrentVault } from "@/state/session_slice";
 import {
   PendingFilter,
   ExecutedFilter,
@@ -10,6 +13,7 @@ import {
 } from "@/constants/filters";
 import PropTypes from "prop-types";
 import TransactionItem from "@/components/ui/transaction-item";
+import { Spinner } from "@chakra-ui/react";
 
 const EmptyTransactions = () => {
   const textColor = useColorModeValue("gray.600", "gray.400");
@@ -26,10 +30,19 @@ const EmptyTransactions = () => {
 };
 
 const TransactionsList = ({ transactions, signers, threshold }) => {
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const currentVault = useSelector(selectCurrentVault);
+  const fetchAllLoading = useSelector((state) => state.transactions.fetchAllLoading);
   const [selectedFilters, setSelectedFilters] = useState([PendingFilter]);
-  const [filteredTransactions, setFilteredTransactions] =
-    useState(transactions);
+  const [filteredTransactions, setFilteredTransactions] = useState(transactions);
   const filters = [PendingFilter, ExecutedFilter, FailedFilter];
+
+  useEffect(() => {
+    if (isAuthenticated && currentVault) {
+      dispatch(fetchAllTransactions());
+    }
+  }, [dispatch, isAuthenticated, currentVault]);
 
   useEffect(() => {
     function applySelectedFilters(transactions) {
@@ -45,6 +58,13 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
     setFilteredTransactions(applySelectedFilters(transactions));
   }, [selectedFilters, transactions]);
 
+  if (fetchAllLoading) {
+    return (
+      <Center w="full" py={12}>
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
 
   if (!transactions.length) {
     return <EmptyTransactions />;

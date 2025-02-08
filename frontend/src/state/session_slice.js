@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { container } from "@/inversify.config";
 import { SESSION_REPOSITORY } from "@/repository/session";
 import { Principal } from "@dfinity/principal";
+import { toaster } from "@/components/ui/toaster";
 
 const initialState = {
   user: null,
@@ -11,15 +12,36 @@ const initialState = {
   isAuthenticated: false,
 };
 
+export const logout = createAsyncThunk(
+  "session/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      const repository = container.get(SESSION_REPOSITORY);
+      await repository.logout();
+      return null;
+    } catch (error) {
+      console.error("Error during logout", error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const initialize = createAsyncThunk(
   "session/initialize",
-  async (agent, { rejectWithValue }) => {
+  async (agent, { dispatch, rejectWithValue }) => {
     try {
       const repository = container.get(SESSION_REPOSITORY);
       const { user } = await repository.initialize(agent);
       return { user };
     } catch (error) {
       console.error("Error setting authenticated agent", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to initialize session",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
+      // Trigger logout when initialization fails
+      dispatch(logout());
       return rejectWithValue(error.message);
     }
   }
@@ -34,6 +56,11 @@ export const focus = createAsyncThunk(
       return vault;
     } catch (error) {
       console.error("Error focusing on vault", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to connect to vault",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -68,6 +95,13 @@ export const sessionSlice = createSlice({
     });
     builder.addCase(focus.rejected, (state, action) => {
       state.error = action.payload;
+    });
+    builder.addCase(logout.fulfilled, (state) => {
+      state.user = null;
+      state.vault = null;
+      state.error = null;
+      state.isAuthenticated = false;
+      state.isAuthenticating = false;
     });
   },
 });

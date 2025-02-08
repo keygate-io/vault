@@ -12,8 +12,10 @@ import { createTransaction } from "@/state/transactions_slice";
 import { Field } from "@/components/ui/field";
 import { isValidPrincipal } from "@/utils/cryptoAddressFormats";
 import { isValidAccountIdentifier } from "@/utils/cryptoAddressFormats";
+import { floatToE8s } from "@/utils/floatPrecision";
+import PropTypes from "prop-types";
 
-const CreateTransaction = ({ onClose }) => {
+const CreateTransaction = ({ onClose, vaultId, onError }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [formStep, setFormStep] = useState("idle");
@@ -46,11 +48,11 @@ const CreateTransaction = ({ onClose }) => {
 
   const deriveStepDisplayText = () => {
     if (formStep === "sending") {
-      return "Sending to decentralized vault...";
+      return "Proposing transaction to decentralized vault...";
     }
 
     if (formStep === "sent") {
-      return "Sent.";
+      return "Transaction proposed successfully.";
     }
 
     return "";
@@ -68,13 +70,22 @@ const CreateTransaction = ({ onClose }) => {
 
     const transaction = {
       recipient: recipient,
-      amount: amount,
+      amount: floatToE8s(parseFloat(amount)),
     };
 
-    // leave creation request in flight
-    dispatch(createTransaction(transaction));
-
-    await simulateSending(); // (we already have the transaction in flight)
+    try {
+      setFormStep("sending");
+      await dispatch(createTransaction({ transaction })).unwrap();
+      setFormStep("sent");
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (error) {
+      setFormStep("idle");
+      if (onError) {
+        onError(error);
+      }
+    }
   };
 
   return (
@@ -140,11 +151,7 @@ const CreateTransaction = ({ onClose }) => {
         <Box overflow="hidden" minHeight="20px">
           <Text
             fontSize="xs"
-            animation={
-              formStep === "sending"
-                ? "pulse 1s ease-in-out infinite"
-                : undefined
-            }
+            color="gray.500"
           >
             {deriveStepDisplayText()}
           </Text>
@@ -164,6 +171,12 @@ const CreateTransaction = ({ onClose }) => {
       </VStack>
     </Box>
   );
+};
+
+CreateTransaction.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  vaultId: PropTypes.string.isRequired,
+  onError: PropTypes.func,
 };
 
 export default CreateTransaction;
