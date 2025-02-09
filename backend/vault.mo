@@ -7,6 +7,10 @@ import Time "mo:base/Time";
 import Map "mo:map/Map";
 import { nhash } "mo:map/Map";
 import Error "mo:base/Error";
+import IcpLedger "canister:icp_ledger_canister";
+import Debug "mo:base/Debug";
+import Nat64 "mo:base/Nat64";
+
 
 
 actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
@@ -19,7 +23,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     // State variables
     private stable var transactionCount : Nat = 0;
     private stable var transactions = Map.new<Nat, Types.Transaction>();
-    private stable var confirmations = Map.new<Nat, [(Principal, Bool)]>();
+    private stable var decisions = Map.new<Nat, [(Principal, Bool)]>();
 
     private stable var threshold : Nat = initThreshold;
 
@@ -57,7 +61,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         Map.set(transactions, nhash, transaction.id, transaction);
 
         // Initialize confirmations with Map
-        Map.set(confirmations, nhash, transaction.id, [(caller, true)]);
+        Map.set(decisions, nhash, transaction.id, [(caller, true)]);
 
         // Return the transaction ID
         #ok(transaction)
@@ -82,7 +86,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
             });
         };
 
-        switch (Map.get(confirmations, nhash, txId)) {
+        switch (Map.get(decisions, nhash, txId)) {
             case null {
                 return #err({
                     code = 404;
@@ -107,7 +111,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                 let newConfirmation = (caller, true);
 
                 // Update confirmations with Map
-                Map.set(confirmations, nhash, txId, Array.append(existingConfirmations, [newConfirmation]));
+                Map.set(decisions, nhash, txId, Array.append(existingConfirmations, [newConfirmation]));
 
                 #ok(())
             }
@@ -115,11 +119,94 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     };
 
     public shared({ caller }) func executeTransaction(txId: Nat) : async Result.Result<(), Types.ApiError> {
-        #err({
-            code = 501;
-            message = "Not implemented";
-            details = null;
-        })
+        // Check if the caller is an owner
+        if (not isOwnerPrincipal(caller)) {
+            return #err({
+                code = 403;
+                message = "Only owners can execute transactions";
+                details = null
+            });
+        };
+
+        // Check if transaction exists
+        let txOpt = Map.get(transactions, nhash, txId);
+        switch (txOpt) {
+            case null {
+                return #err({
+                    code = 404;
+                    message = "Transaction not found";
+                    details = null
+                });
+            };
+            case (?transaction) {
+                // Get confirmations
+                switch (Map.get(decisions, nhash, txId)) {
+                    case null {
+                        return #err({
+                            code = 404;
+                            message = "Transaction confirmations not found";
+                            details = null
+                        });
+                    };
+                    case (?confirmations) {
+                        // Count valid confirmations
+                        let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
+                            confirmations,
+                            0,
+                            func(acc, current) {
+                                if (current.1) { acc + 1 } else { acc }
+                            }
+                        );
+
+                        // Check if enough confirmations
+                        if (confirmationCount < threshold) {
+                            return #err({
+                                code = 400;
+                                message = "Not enough confirmations";
+                                details = ?(Nat.toText(confirmationCount) # " of " # Nat.toText(threshold) # " required confirmations")
+                            });
+                        };
+
+                        // Prepare transfer arguments
+                        let transferArgs : IcpLedger.TransferArgs = {
+                            memo = 0;
+                            amount = { e8s = Nat64.fromNat(transaction.amount.e8s) };
+                            fee = { e8s = 10_000 };
+                            from_subaccount = null;
+                            to = transaction.to;
+                            created_at_time = switch (transaction.created_at_time) {
+                                case (null) { null };
+                                case (?time) { ?{ timestamp_nanos = Nat64.fromIntWrap(time) } };
+                            };
+                        };
+
+                        Debug.print(debug_show(transferArgs));
+
+                        try {
+                            // Execute transfer
+                            let transferResult = await IcpLedger.transfer(transferArgs);
+                            
+                            switch (transferResult) {
+                                case (#Err(transferError)) {
+                                    return #err({
+                                        code = 500;
+                                        message = "Transfer failed: " # debug_show(transferError);
+                                        details = ?(debug_show(transferError))
+                                    });
+                                };
+                                case (#Ok(_)) { return #ok(()) };
+                            };
+                        } catch (error : Error) {
+                            return #err({
+                                code = 500;
+                                message = "Transfer failed: " # Error.message(error);
+                                details = ?(Error.message(error))
+                            });
+                        };
+                    };
+                };
+            };
+        };
     };
 
     // Owner Management
@@ -308,7 +395,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
 
     // Utility & Queries
     public query func getTransactionDetails(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
-        switch (Map.get(confirmations, nhash, txId)) {
+        switch (Map.get(decisions, nhash, txId)) {
             case null {
                 #err({
                     code = 404;
@@ -316,7 +403,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                     details = ?("No transaction exists with ID: " # Nat.toText(txId));
                 })
             };
-            case (?confirms) {
+            case (?decisions) {
                 switch (Map.get(transactions, nhash, txId)) {
                     case null { 
                         #err({
@@ -326,18 +413,10 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                         }) 
                     };
                     case (?transaction) {
-                        let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
-                            confirms,
-                            0,
-                            func(acc : Nat, (p, confirmed) : (Principal, Bool)) : Nat {
-                                if (isOwnerPrincipal(p) and confirmed) { acc + 1 } else { acc }
-                            }
-                        );
-
                         #ok({
                             id = txId;
                             transaction = transaction;
-                            confirmations = confirmationCount;
+                            decisions = decisions;
                             threshold = threshold;
                             required = threshold;
                             executed = false;
@@ -365,24 +444,16 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         Array.map<(Nat, Types.Transaction), Types.TransactionDetails>(
             txEntries,
             func((txId, transaction)) {
-                let confirms_query = Map.get(confirmations, nhash, txId);
-                let confirms : [(Principal, Bool)] = switch(confirms_query) {
+                let decisions_query = Map.get(decisions, nhash, txId);
+                let decisions_array : [(Principal, Bool)] = switch(decisions_query) {
                     case null { [] };
-                    case (?c) { c };
+                    case (?d) { d };
                 };
-                
-                let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
-                    confirms,
-                    0,
-                    func(acc : Nat, (p, confirmed) : (Principal, Bool)) : Nat {
-                        if (isOwnerPrincipal(p) and confirmed) { acc + 1 } else { acc }
-                    }
-                );
 
                 {
                     id = txId;
                     transaction = transaction;
-                    confirmations = confirmationCount;
+                    decisions = decisions_array;
                     threshold = threshold;
                     required = threshold;
                     executed = false;

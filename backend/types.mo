@@ -1,8 +1,9 @@
 import Time "mo:base/Time";
+import Principal "mo:base/Principal";
 
 module Types {
     public type Tokens = { e8s : Nat };
-    public type AccountIdentifier = Blob;  
+    public type AccountIdentifier = Blob;
 
     // General error type (used for API responses)
     public type ApiError = {
@@ -23,9 +24,21 @@ module Types {
     public type TransactionDetails = {
         id : Nat;
         transaction : Transaction;
-        confirmations : Nat;
+        decisions: [(Principal, Bool)];
         threshold : Nat;
         required : Nat;
         executed : Bool;
+    };
+
+    // User type (from manager_types)
+    public type User = {
+        name: Text;
+        principal: Principal;
+    };
+
+    // Vault type (from manager_types)
+    public type Vault = {
+        name: Text;
+        canister_id: Principal;
     };
 }

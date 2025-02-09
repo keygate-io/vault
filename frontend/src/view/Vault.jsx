@@ -11,7 +11,11 @@ import DevModePanel from "@/components/ui/dev-mode-panel";
 import { useDispatch, useSelector } from "react-redux";
 import { Feature } from "@/components/ui/feature";
 import { Toaster } from "@/components/ui/toaster";
-import { fetchVaults, selectVaults, selectVaultById } from "@/state/vaults_slice";
+import {
+  selectVaults,
+  selectVaultById,
+  selectIsCreatingVault,
+} from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
 import { focus } from "@/state/session_slice";
 
@@ -21,21 +25,32 @@ function Vault() {
   const { transactions_list } = useSelector((state) => state.transactions);
   const vaults = useSelector((state) => selectVaults(state));
   const vault = useSelector((state) => selectVaultById(state, vaultId));
+  const isCreating = useSelector(selectIsCreatingVault);
+  const isLoading = useSelector((state) => state.vaults.loading);
   const navigate = useNavigate();
   const createTransactionRef = useRef(null);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
 
   useEffect(() => {
-    if (vault) {
+    console.log("isLoading", isLoading);
+    console.log("isCreating", isCreating);
+    console.log("vault", vault);
+
+    if (!isLoading && !isCreating && !vault) {
+      navigate("/vaults");
+      return;
+    }
+
+    if (vault && !isCreating) {
       dispatch(focus(vault));
     }
-  }, [vault, vaultId, dispatch]);
+  }, [vault, vaultId, dispatch, isCreating, isLoading, navigate]);
 
   useEffect(() => {
-    if (vault) {
+    if (vault && !isCreating) {
       dispatch(fetchSignersForVault(vault.id));
     }
-  }, [vault]);
+  }, [vault, isCreating]);
 
   const handleCollapsibleOpen = () => {
     setIsCollapsibleOpen(true);
@@ -43,11 +58,12 @@ function Vault() {
       if (createTransactionRef.current) {
         const yOffset = -100;
         const element = createTransactionRef.current;
-        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        
+        const y =
+          element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
         window.scrollTo({
           top: y,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     }, 100);
@@ -73,7 +89,7 @@ function Vault() {
         <Link
           variant="ghost"
           colorScheme="gray"
-          onClick={() => navigate('/vaults')}
+          onClick={() => navigate("/vaults")}
         >
           <ArrowLeftIcon width={16} />
           Back to Vaults
@@ -107,8 +123,8 @@ function Vault() {
           >
             {({ onClose }) => (
               <div ref={createTransactionRef}>
-                <CreateTransaction 
-                  onClose={() => handleTransactionSuccess(onClose)} 
+                <CreateTransaction
+                  onClose={() => handleTransactionSuccess(onClose)}
                   vaultId={vaultId}
                   onError={handleTransactionError}
                 />

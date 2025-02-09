@@ -60,7 +60,7 @@ export const createVault = createAsyncThunk(
 // Initial state
 const initialState = {
   vaults_map: {},
-  loading: false,
+  loading: true,
   creating: false,
   error: null,
 };

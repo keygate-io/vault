@@ -16,9 +16,9 @@ export const idlFactory = ({ IDL }) => {
   });
   const TransactionDetails = IDL.Record({
     'id' : IDL.Nat,
-    'confirmations' : IDL.Nat,
     'threshold' : IDL.Nat,
     'transaction' : Transaction,
+    'decisions' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
     'required' : IDL.Nat,
     'executed' : IDL.Bool,
   });

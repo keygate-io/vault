@@ -2,18 +2,24 @@ import { HStack, Box, Flex, VStack, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import PropTypes from "prop-types";
-import { useSelector } from "react-redux";
-import { selectApprovalsCount } from "@/state/decisions_slice";
-import { selectCurrentVaultId } from "@/state/session_slice";
+import { useSelector, useDispatch } from "react-redux";
+import { selectApprovalsCount, fetchDecisions } from "@/state/decisions_slice";
+import {
+  selectCurrentVaultId,
+  selectCurrentVault,
+} from "@/state/session_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
 import { selectVaultSigners } from "../../state/signers_slice";
 import { GlobalSettings } from "@/constants/global_config";
+import { useEffect } from "react";
 
 export function ApprovalGrid({ txId, ...props }) {
+  const dispatch = useDispatch();
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
   const borderColor = useColorModeValue("blackAlpha.200", "whiteAlpha.300");
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const currentVault = useSelector((state) => selectCurrentVault(state));
   const approvals = useSelector((state) =>
     selectApprovalsCount(state, currentVaultId, txId)
   );
@@ -23,6 +29,12 @@ export function ApprovalGrid({ txId, ...props }) {
   const signers = useSelector((state) =>
     selectVaultSigners(state, currentVaultId)
   );
+
+  useEffect(() => {
+    if (currentVault && txId) {
+      dispatch(fetchDecisions());
+    }
+  }, [currentVault, txId, dispatch]);
 
   const BOX_WIDTH = 16; // px
   const BOX_SPACING = 8.25; // px, equivalent to spacing={1} in HStack
@@ -98,7 +110,7 @@ export function ApprovalGrid({ txId, ...props }) {
 }
 
 ApprovalGrid.propTypes = {
-  txId: PropTypes.number.isRequired,
+  txId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default ApprovalGrid;

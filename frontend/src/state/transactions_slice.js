@@ -3,6 +3,9 @@ import { container } from "@/inversify.config";
 import { TRANSACTIONS_REPOSITORY } from "@/repository/transactions";
 import { createSelector } from "reselect";
 import { toaster } from "@/components/ui/toaster";
+import { VAULTS_REPOSITORY } from "@/repository/vaults";
+import { ErrorToast } from "@/components/ui/error-toast";
+import { createElement } from "react";
 
 // Async thunks
 export const fetchAllTransactions = createAsyncThunk(
@@ -55,7 +58,9 @@ export const createTransaction = createAsyncThunk(
     } catch (error) {
       console.error("Error in createTransaction", error);
       toaster.create({
-        description: error.isApiError ? error.message : "Failed to create transaction",
+        description: error.isApiError
+          ? error.message
+          : "Failed to create transaction",
         type: "error",
         duration: error.isApiError ? 5000 : 3000,
       });
@@ -66,7 +71,7 @@ export const createTransaction = createAsyncThunk(
 
 export const executeTransaction = createAsyncThunk(
   "transactions/executeTransaction",
-  async ({ vaultId, transactionId }, { rejectWithValue }) => {
+  async ({ vaultId, transactionId }, { rejectWithValue, getState }) => {
     try {
       if (!vaultId) {
         toaster.create({
@@ -87,7 +92,7 @@ export const executeTransaction = createAsyncThunk(
 
       const repository = container.get(TRANSACTIONS_REPOSITORY);
       const executedTransaction = await repository.execute(
-        vaultId,
+        Number(vaultId),
         transactionId
       );
       toaster.create({
@@ -98,10 +103,27 @@ export const executeTransaction = createAsyncThunk(
       return executedTransaction;
     } catch (error) {
       console.error("Error in executeTransaction", error);
+      const userMessage =
+        error.code === BigInt(500)
+          ? "Due to internal server issues, we could not process your transaction. Please contact us immediately to resolve this issue."
+          : error.isApiError
+          ? error.message
+          : "Failed to execute transaction";
+
+      const technicalDetails = JSON.stringify({
+        message: error.message,
+        code: error.code?.toString(),
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      });
+
       toaster.create({
-        description: error.isApiError ? error.message : "Failed to execute transaction",
+        description: createElement(ErrorToast, {
+          message: userMessage,
+          technicalDetails: technicalDetails,
+        }),
         type: "error",
-        duration: error.isApiError ? 5000 : 3000,
+        duration: 7000,
       });
       return rejectWithValue(error.message);
     }
@@ -129,6 +151,7 @@ const transactionsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchAllTransactions.fulfilled, (state, action) => {
+        console.log("fetchAllTransactions fulfilled payload", action.payload);
         state.fetchAllLoading = false;
         state.transactions_list = action.payload;
         state.error = null;

@@ -1,16 +1,26 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getRepository } from "@/constants/module_config";
+import { container } from "@/inversify.config";
+import { DECISIONS_REPOSITORY } from "@/repository/decisions";
 import { createSelector } from "reselect";
+import { toaster } from "@/components/ui/toaster";
 
 // Async thunk for fetching all decisions
 export const fetchDecisions = createAsyncThunk(
   "decisions/fetchDecisions",
   async (_, { rejectWithValue }) => {
     try {
-      const repository = getRepository("decisions");
+      const repository = container.get(DECISIONS_REPOSITORY);
       const decisions = await repository.getAll();
       return decisions;
     } catch (error) {
+      console.error("Error in fetchDecisions", error);
+      toaster.create({
+        description: error.isApiError
+          ? error.message
+          : "Failed to fetch decisions",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -28,7 +38,12 @@ export const recordDecision = createAsyncThunk(
       const userId = state.session.user?.id;
 
       if (!userId) {
-        return rejectWithValue("User must be logged in to record a decision");
+        const error = new Error("User must be logged in to record a decision");
+        toaster.create({
+          description: error.message,
+          type: "error",
+        });
+        return rejectWithValue(error.message);
       }
 
       // Check if user has already approved
@@ -38,18 +53,29 @@ export const recordDecision = createAsyncThunk(
         transactionId,
         userId
       );
-
       if (hasApproved) {
-        return rejectWithValue("User has already approved this transaction");
+        const error = new Error("You have already approved this transaction");
+        toaster.create({
+          description: error.message,
+          type: "error",
+        });
+        return rejectWithValue(error.message);
       }
 
-      const repository = getRepository("decisions");
+      const repository = container.get(DECISIONS_REPOSITORY);
       const allDecisions = await repository.recordDecision(
         vaultId,
         transactionId,
         isApproval,
         userId
       );
+
+      toaster.create({
+        description: isApproval
+          ? "Transaction approved successfully!"
+          : "Transaction rejected successfully!",
+        type: "success",
+      });
 
       // Extract decisions for the specific vault and transaction
       const decisionsForTx = allDecisions[vaultId]?.[transactionId] || [];
@@ -60,14 +86,22 @@ export const recordDecision = createAsyncThunk(
         decisions: decisionsForTx,
       };
     } catch (error) {
+      console.error("Error in recordDecision", error);
+      toaster.create({
+        description: error.isApiError
+          ? error.message
+          : "Failed to record decision",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Initial state and slice setup remains the same
+// Initial state
 const initialState = {
-  decisions_map: {},
+  decisions_map: {}, // Structure: { [vaultId]: { [txId]: Array<[userId, isApproval]> } }
   loadingTxIds: {}, // Map of txIds that are currently loading
   error: null,
 };
@@ -75,9 +109,22 @@ const initialState = {
 export const decisionsSlice = createSlice({
   name: "decisions",
   initialState,
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      // ... existing fetchDecisions cases
+      // Fetch all decisions
+      .addCase(fetchDecisions.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(fetchDecisions.fulfilled, (state, action) => {
+        console.log("fetchDecisions fulfilled payload", action.payload);
+        state.decisions_map = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchDecisions.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      // Record decision
       .addCase(recordDecision.pending, (state, action) => {
         const { transactionId } = action.meta.arg;
         state.loadingTxIds[transactionId] = true;
@@ -86,43 +133,34 @@ export const decisionsSlice = createSlice({
       .addCase(recordDecision.fulfilled, (state, action) => {
         const { vaultId, txId, decisions } = action.payload;
         delete state.loadingTxIds[txId];
-        state.error = null;
 
         if (!state.decisions_map[vaultId]) {
           state.decisions_map[vaultId] = {};
         }
-
         state.decisions_map[vaultId][txId] = decisions;
+        state.error = null;
       })
       .addCase(recordDecision.rejected, (state, action) => {
         const { transactionId } = action.meta.arg;
-        console.warn("Could not record decision", action.payload);
         delete state.loadingTxIds[transactionId];
         state.error = action.payload;
       });
   },
 });
 
-// Selectors and helper functions remain unchanged
+// Selectors
 const selectDecisionsState = (state) => state.decisions;
 
-const selectDecisionsForTx = createSelector(
+export const selectDecisionsForTx = createSelector(
   [selectDecisionsState, (_, vaultId) => vaultId, (_, __, txId) => txId],
   (decisionsState, vaultId, txId) => {
-    console.log("selectDecisionsForTx - inputs:", {
-      decisionsState,
-      vaultId,
-      txId,
-    });
-    const decisions = decisionsState.decisions_map[vaultId]?.[txId] || [];
-    console.log(
-      "selectDecisionsForTx - output decisions (for txId:",
-      txId,
-      "):",
-      decisions
-    );
-    return decisions;
+    return decisionsState.decisions_map[vaultId]?.[txId] || [];
   }
+);
+
+export const isTransactionLoading = createSelector(
+  [selectDecisionsState, (_, txId) => txId],
+  (decisionsState, txId) => Boolean(decisionsState.loadingTxIds[txId])
 );
 
 export const selectDecisionsCount = createSelector(
@@ -149,12 +187,6 @@ export const hasUserApprovedThisTxId = createSelector(
   }
 );
 
-// Add a new selector to check if a specific transaction is loading
-export const isTransactionLoading = createSelector(
-  [selectDecisionsState, (_, txId) => txId],
-  (decisionsState, txId) => Boolean(decisionsState.loadingTxIds[txId])
-);
-
 export const selectDecisionMakers = createSelector(
   [selectDecisionsForTx],
   (decisions) => decisions.map((decision) => decision[0])
@@ -163,11 +195,9 @@ export const selectDecisionMakers = createSelector(
 export const selectApprovers = createSelector(
   [selectDecisionsForTx],
   (decisions) => {
-    console.log("selectApprovers - input decisions:", decisions);
     const approvers = decisions
       .filter((decision) => decision[1] === true)
       .map((decision) => decision[0]);
-    console.log("selectApprovers - filtered approvers:", approvers);
     return approvers;
   }
 );

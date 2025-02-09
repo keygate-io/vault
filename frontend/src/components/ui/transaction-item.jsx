@@ -10,6 +10,7 @@ import PropTypes from "prop-types";
 import { floatPrecision } from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 import {
   recordDecision,
   hasUserApprovedThisTxId,
@@ -30,29 +31,25 @@ import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 
 const ActionExecuteButton = ({ tx }) => {
   const dispatch = useDispatch();
-  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
+  const { vaultId } = useParams();
 
   const approvals = useSelector((state) =>
-    selectApprovalsCount(state, currentVaultId, tx.id)
+    selectApprovalsCount(state, vaultId, tx.id)
   );
 
   const threshold = useSelector((state) =>
-    selectVaultThreshold(state, currentVaultId)
+    selectVaultThreshold(state, vaultId)
   );
 
-  const signers = useSelector((state) =>
-    selectVaultSigners(state, currentVaultId)
-  );
+  const signers = useSelector((state) => selectVaultSigners(state, vaultId));
 
   const adjustedThreshold = Math.min(threshold, signers.length);
 
   const isExecuting = useSelector((state) => isExecutionLoading(state, tx.id));
 
   const handleExecute = () => {
-    dispatch(
-      executeTransaction({ vaultId: currentVaultId, transactionId: tx.id })
-    );
-
+    console.log("dispatching execute transaction for vault", vaultId);
+    dispatch(executeTransaction({ vaultId: vaultId, transactionId: tx.id }));
   };
 
   return (
@@ -83,6 +80,7 @@ const ActionApproveButton = ({ txId, vaultId }) => {
   );
 
   const handleApprove = () => {
+    console.log("Dispatching decision");
     dispatch(
       recordDecision({
         vaultId,
@@ -90,6 +88,7 @@ const ActionApproveButton = ({ txId, vaultId }) => {
         isApproval: true,
       })
     );
+    console.log("Dispatched decision");
   };
 
   if (hasApproved) {
@@ -118,21 +117,19 @@ const ActionApproveButton = ({ txId, vaultId }) => {
 };
 
 const TransactionItem = ({ tx }) => {
-  const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
-  const signers = useSelector((state) =>
-    selectVaultSigners(state, currentVaultId)
-  );
+  const { vaultId } = useParams();
+  const signers = useSelector((state) => selectVaultSigners(state, vaultId));
   const threshold = useSelector((state) =>
-    selectVaultThreshold(state, currentVaultId)
+    selectVaultThreshold(state, vaultId)
   );
   const approvals = useSelector((state) =>
-    selectApprovalsCount(state, currentVaultId, tx.id)
+    selectApprovalsCount(state, vaultId, tx.id)
   );
   const approversUserId = useSelector((state) =>
-    selectApprovers(state, currentVaultId, tx.id)
+    selectApprovers(state, vaultId, tx.id)
   );
   const rejectorsUserId = useSelector((state) =>
-    selectRejectors(state, currentVaultId, tx.id)
+    selectRejectors(state, vaultId, tx.id)
   );
 
   const approvers = useSelector((state) =>
@@ -155,11 +152,6 @@ const TransactionItem = ({ tx }) => {
     }
   }, [tx.isSuccessful]);
 
-  useEffect(() => {
-    // Issue is that: this is returning 1,true,10,true,9,true
-    console.log(`Found approvals (userId[]): ${approversUserId}`);
-  }, [approversUserId]);
-
   function conditionallyRenderActionButton() {
     if (tx.isExecuted) {
       return;
@@ -169,7 +161,7 @@ const TransactionItem = ({ tx }) => {
       return <ActionExecuteButton tx={tx} />;
     }
 
-    return <ActionApproveButton vaultId={currentVaultId} txId={tx.id} />;
+    return <ActionApproveButton vaultId={vaultId} txId={tx.id} />;
   }
 
   function conditionallyRenderApprovalGrid() {
@@ -194,27 +186,29 @@ const TransactionItem = ({ tx }) => {
               content={tx.isSuccessful ? "Success" : "Pending"}
               sentiment={derivedSentimentColor}
             />
-            {
-              tx.isExecuted && (
-                <AvatarGroup>
+            {tx.isExecuted && (
+              <AvatarGroup>
                 {approvers.map((approver, index) => (
-                    <Box position="relative" key={approver.id}>
-                      <Avatar
-                        name={approver.name}
-                        src={approver.avatarUrl}
-                        fallback={approver.name[0]}
-                        ml={index === 0 ? 0 : -7}
-                        size="xs"
-                      />
-                      <Box position="absolute" bottom="-1" right="-1" zIndex={100}>
-                        <CheckBadgeIcon width={12} height={12} color="#22c55e" />
-                      </Box>
+                  <Box position="relative" key={approver.id}>
+                    <Avatar
+                      name={approver.name}
+                      src={approver.avatarUrl}
+                      fallback={approver.name[0]}
+                      ml={index === 0 ? 0 : -7}
+                      size="xs"
+                    />
+                    <Box
+                      position="absolute"
+                      bottom="-1"
+                      right="-1"
+                      zIndex={100}
+                    >
+                      <CheckBadgeIcon width={12} height={12} color="#22c55e" />
                     </Box>
+                  </Box>
                 ))}
-                </AvatarGroup>
-              )
-            }
-
+              </AvatarGroup>
+            )}
           </HStack>
         </VStack>
         <VStack align="flex-end">

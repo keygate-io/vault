@@ -198,8 +198,11 @@ export class ICPTransactionRepository extends TransactionRepository {
         amount: e8sToFloat(tx.transaction.amount),
         isExecuted: tx.executed,
         isSuccessful: tx.executed,
-        confirmations: tx.confirmations,
-        threshold: tx.threshold,
+        threshold: Number(tx.threshold),
+        decisions: tx.decisions.map(([principal, isApproved]) => [
+          principal.toString(),
+          isApproved,
+        ]),
       }));
 
       console.log("Formatted transactions:", formattedTransactions);
@@ -262,13 +265,15 @@ export class ICPTransactionRepository extends TransactionRepository {
   }
 
   async execute(vault_id, transaction_id) {
-    const managerActor = this.sessionRepository.ManagerActor;
-    if (!managerActor) {
-      throw new Error("Manager actor not initialized");
+    const vaultActor = this.sessionRepository.VaultActor;
+    if (!vaultActor) {
+      throw new Error("Vault actor not initialized");
     }
 
     try {
-      const result = await managerActor.executeTransaction(vault_id, BigInt(transaction_id));
+      const result = await vaultActor.executeTransaction(
+        BigInt(transaction_id)
+      );
       
       // Check if result contains an error
       if (result && result.err) {
