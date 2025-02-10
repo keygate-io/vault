@@ -1,22 +1,27 @@
 export const idlFactory = ({ IDL }) => {
+  const Tokens = IDL.Record({ 'e8s' : IDL.Nat64 });
+  const ProposalAction = IDL.Variant({
+    'Transaction' : IDL.Record({ 'to' : IDL.Principal, 'amount' : Tokens }),
+    'Invite' : IDL.Principal,
+  });
+  const Proposal = IDL.Record({
+    'id' : IDL.Nat,
+    'confirmations' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
+    'action' : ProposalAction,
+    'executed' : IDL.Bool,
+    'created_at_time' : IDL.Int,
+  });
   const ApiError = IDL.Record({
     'code' : IDL.Nat,
     'message' : IDL.Text,
     'details' : IDL.Opt(IDL.Text),
   });
-  const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : ApiError });
-  const Subaccount = IDL.Vec(IDL.Nat8);
-  const Account = IDL.Record({
-    'owner' : IDL.Principal,
-    'subaccount' : IDL.Opt(Subaccount),
-  });
-  const Time = IDL.Int;
-  const Tokens = IDL.Record({ 'e8s' : IDL.Nat64 });
+  const Result_1 = IDL.Variant({ 'ok' : Proposal, 'err' : ApiError });
   const Transaction = IDL.Record({
     'id' : IDL.Nat,
-    'to' : Account,
+    'to' : IDL.Principal,
     'executed' : IDL.Bool,
-    'created_at_time' : IDL.Opt(Time),
+    'created_at_time' : IDL.Opt(IDL.Int),
     'amount' : Tokens,
   });
   const TransactionDetails = IDL.Record({
@@ -27,23 +32,19 @@ export const idlFactory = ({ IDL }) => {
     'required' : IDL.Nat,
   });
   const Result_2 = IDL.Variant({ 'ok' : TransactionDetails, 'err' : ApiError });
-  const Result_1 = IDL.Variant({ 'ok' : Transaction, 'err' : ApiError });
+  const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : ApiError });
   const Vault = IDL.Service({
-    'addOwner' : IDL.Func([IDL.Principal], [Result], []),
-    'changeThreshold' : IDL.Func([IDL.Nat], [Result], []),
-    'confirmTransaction' : IDL.Func([IDL.Nat], [Result], []),
-    'disableModule' : IDL.Func([IDL.Principal], [Result], []),
-    'enableModule' : IDL.Func([IDL.Principal], [Result], []),
+    'confirm' : IDL.Func([IDL.Nat], [Result_1], []),
+    'executeProposal' : IDL.Func([IDL.Nat], [Result_1], []),
     'executeTransaction' : IDL.Func([IDL.Nat], [Result_2], []),
-    'getCanisterId' : IDL.Func([], [IDL.Principal], ['query']),
     'getOwners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_2], ['query']),
     'getTransactions' : IDL.Func([], [IDL.Vec(TransactionDetails)], ['query']),
+    'invite' : IDL.Func([IDL.Principal], [Result_1], []),
     'isConfirmed' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
+    'propose' : IDL.Func([ProposalAction], [Result_1], []),
     'proposeTransaction' : IDL.Func([IDL.Principal, IDL.Nat], [Result_1], []),
     'removeOwner' : IDL.Func([IDL.Principal], [Result], []),
-    'setGuard' : IDL.Func([IDL.Principal], [Result], []),
-    'swapOwner' : IDL.Func([IDL.Principal, IDL.Principal], [Result], []),
   });
   return Vault;
 };

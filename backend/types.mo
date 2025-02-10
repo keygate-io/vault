@@ -20,12 +20,12 @@ module Types {
     };
 
     public type TransferArgs = {
-        from_subaccount : ?Subaccount;
         to : Account;
-        amount : Nat;
         fee : ?Nat;
         memo : ?Blob;
-        created_at_time : ?Timestamp;
+        from_subaccount : ?Subaccount;
+        created_at_time : ?Nat64;
+        amount : Nat;
     };
 
     public type TransferError = {
@@ -43,8 +43,8 @@ module Types {
     public type Transaction = {
         id : Nat;
         amount : Tokens;
-        to : Account;
-        created_at_time : ?Time.Time;
+        to : Principal;
+        created_at_time : ?Int;
         executed : Bool;
     };
 
@@ -57,15 +57,30 @@ module Types {
         required : Nat;
     };
 
-    // User type (from manager_types)
     public type User = {
         name: Text;
         principal: Principal;
     };
 
-    // Vault type (from manager_types)
     public type Vault = {
         name: Text;
         canister_id: Principal;
     };
+
+    public type ProposalAction = {
+        #Transaction : {
+            amount: Tokens;
+            to: Principal;
+        };
+        #Invite : Principal;
+    };
+
+    public type Proposal = {
+        id: Nat;
+        action: ProposalAction;
+        confirmations: [(Principal, Bool)];
+        executed: Bool;
+        created_at_time: Int;
+    };
+
 }
