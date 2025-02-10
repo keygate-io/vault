@@ -2,8 +2,15 @@ import Time "mo:base/Time";
 import Principal "mo:base/Principal";
 
 module Types {
-    public type Tokens = { e8s : Nat };
-    public type AccountIdentifier = Blob;
+    public type Tokens = { e8s : Nat64 };
+    public type Timestamp = Nat64;
+    public type Duration = Nat64;
+    public type Subaccount = Blob;
+
+    public type Account = {
+        owner : Principal;
+        subaccount : ?Subaccount;
+    };
 
     // General error type (used for API responses)
     public type ApiError = {
@@ -12,12 +19,33 @@ module Types {
         details : ?Text;
     };
 
+    public type TransferArgs = {
+        from_subaccount : ?Subaccount;
+        to : Account;
+        amount : Nat;
+        fee : ?Nat;
+        memo : ?Blob;
+        created_at_time : ?Timestamp;
+    };
+
+    public type TransferError = {
+        #BadFee : { expected_fee : Nat };
+        #BadBurn : { min_burn_amount : Nat };
+        #InsufficientFunds : { balance : Nat };
+        #TooOld;
+        #CreatedInFuture : { ledger_time : Timestamp };
+        #Duplicate : { duplicate_of : Nat };
+        #TemporarilyUnavailable;
+        #GenericError : { error_code : Nat; message : Text };
+    };
+
     // Core transaction type
     public type Transaction = {
         id : Nat;
-        amount : Tokens;               // Amount to send (e.g., { e8s = 100_000_000 } for 1 ICP)
-        to : AccountIdentifier;        // Recipient's account ID (Blob)
-        created_at_time : ?Time.Time;  // Optional timestamp for deduplication
+        amount : Tokens;
+        to : Account;
+        created_at_time : ?Time.Time;
+        executed : Bool;
     };
 
     // Aggregated transaction type
@@ -27,7 +55,6 @@ module Types {
         decisions: [(Principal, Bool)];
         threshold : Nat;
         required : Nat;
-        executed : Bool;
     };
 
     // User type (from manager_types)

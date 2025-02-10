@@ -189,15 +189,14 @@ export class ICPTransactionRepository extends TransactionRepository {
 
     try {
       const transactions = await vaultActor.getTransactions();
-      console.log("Raw transactions result:", transactions);
-      
+
       const formattedTransactions = transactions.map((tx) => ({
         id: tx.id.toString(),
         vault_id: focusedVault.canister_id,
-        recipient: Principal.fromUint8Array(tx.transaction.to).toString(),
+        recipient: tx.transaction.to.owner.toString(),
         amount: e8sToFloat(tx.transaction.amount),
-        isExecuted: tx.executed,
-        isSuccessful: tx.executed,
+        isExecuted: tx.transaction.executed,
+        isSuccessful: tx.transaction.executed,
         threshold: Number(tx.threshold),
         decisions: tx.decisions.map(([principal, isApproved]) => [
           principal.toString(),
@@ -205,7 +204,6 @@ export class ICPTransactionRepository extends TransactionRepository {
         ]),
       }));
 
-      console.log("Formatted transactions:", formattedTransactions);
       return formattedTransactions;
     } catch (error) {
       console.error('Error in getAll:', error);
@@ -225,41 +223,35 @@ export class ICPTransactionRepository extends TransactionRepository {
     }
 
     try {
-      console.log(transaction);
-
-      const result = await vaultActor.proposeTransaction(Principal.fromText(transaction.recipient), transaction.amount.e8s);
+      const result = await vaultActor.proposeTransaction(
+        Principal.fromText(transaction.recipient),
+        transaction.amount.e8s
+      );
 
       // Check if result contains an error
       if (result.err) {
         throw {
           message: result.err.message || "Failed to propose transaction",
           code: result.err.code,
-          isApiError: true
+          isApiError: true,
         };
       }
 
       const tx = result.ok;
 
-      console.log("Proposed transaction successfully");
-      console.log("Result", tx);
-
-
-      console.log("Transaction amount type:", typeof tx.amount);
       const parsedTx = {
         id: tx.id.toString(),
         vault_id: focusedVault.canister_id,
-        recipient: Principal.fromUint8Array(tx.to).toString(),
+        recipient: tx.to.owner.toString(),
         amount: e8sToFloat(tx.amount),
         created_at_time: tx.created_at_time.toString(),
         isExecuted: false,
         isSuccessful: false,
       };
 
-      console.log("Parsed transaction", parsedTx);
-
       return parsedTx;
     } catch (error) {
-      console.error('Error in create:', error);
+      console.error("Error in create:", error);
       throw error;
     }
   }
@@ -284,9 +276,13 @@ export class ICPTransactionRepository extends TransactionRepository {
         };
       }
 
+      console.log("Executed transaction:", result.ok);
+
       return {
         id: transaction_id,
         vault_id: vault_id,
+        recipient: result.ok.transaction.to.owner.toString(),
+        amount: e8sToFloat(result.ok.transaction.amount),
         isExecuted: true,
         isSuccessful: true,
       };

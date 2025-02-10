@@ -5,12 +5,17 @@ export const idlFactory = ({ IDL }) => {
     'details' : IDL.Opt(IDL.Text),
   });
   const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : ApiError });
-  const AccountIdentifier = IDL.Vec(IDL.Nat8);
+  const Subaccount = IDL.Vec(IDL.Nat8);
+  const Account = IDL.Record({
+    'owner' : IDL.Principal,
+    'subaccount' : IDL.Opt(Subaccount),
+  });
   const Time = IDL.Int;
-  const Tokens = IDL.Record({ 'e8s' : IDL.Nat });
+  const Tokens = IDL.Record({ 'e8s' : IDL.Nat64 });
   const Transaction = IDL.Record({
     'id' : IDL.Nat,
-    'to' : AccountIdentifier,
+    'to' : Account,
+    'executed' : IDL.Bool,
     'created_at_time' : IDL.Opt(Time),
     'amount' : Tokens,
   });
@@ -20,7 +25,6 @@ export const idlFactory = ({ IDL }) => {
     'transaction' : Transaction,
     'decisions' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
     'required' : IDL.Nat,
-    'executed' : IDL.Bool,
   });
   const Result_2 = IDL.Variant({ 'ok' : TransactionDetails, 'err' : ApiError });
   const Result_1 = IDL.Variant({ 'ok' : Transaction, 'err' : ApiError });
@@ -30,7 +34,7 @@ export const idlFactory = ({ IDL }) => {
     'confirmTransaction' : IDL.Func([IDL.Nat], [Result], []),
     'disableModule' : IDL.Func([IDL.Principal], [Result], []),
     'enableModule' : IDL.Func([IDL.Principal], [Result], []),
-    'executeTransaction' : IDL.Func([IDL.Nat], [Result], []),
+    'executeTransaction' : IDL.Func([IDL.Nat], [Result_2], []),
     'getCanisterId' : IDL.Func([], [IDL.Principal], ['query']),
     'getOwners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_2], ['query']),

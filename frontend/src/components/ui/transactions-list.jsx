@@ -1,19 +1,29 @@
-import { HStack, VStack, Text, Center, Separator } from "@chakra-ui/react";
+import {
+  HStack,
+  VStack,
+  Text,
+  Center,
+  Separator,
+  Box,
+  Code,
+} from "@chakra-ui/react";
 import { InboxIcon } from "@heroicons/react/24/solid";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import FilterButtonGroup from "@/components/ui/filter-button-group";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllTransactions } from "@/state/transactions_slice";
-import { selectIsAuthenticated, selectCurrentVault } from "@/state/session_slice";
 import {
-  PendingFilter,
-  ExecutedFilter,
-  FailedFilter,
-} from "@/constants/filters";
+  selectIsAuthenticated,
+  selectCurrentVault,
+  selectCurrentVaultId,
+} from "@/state/session_slice";
+import { PendingFilter, ExecutedFilter } from "@/constants/filters";
 import PropTypes from "prop-types";
 import TransactionItem from "@/components/ui/transaction-item";
 import { Spinner } from "@chakra-ui/react";
+import { selectVaultSigners } from "@/state/signers_slice";
+import { selectVaultThreshold } from "@/state/vaults_slice";
 
 const EmptyTransactions = () => {
   const textColor = useColorModeValue("gray.600", "gray.400");
@@ -29,14 +39,28 @@ const EmptyTransactions = () => {
   );
 };
 
-const TransactionsList = ({ transactions, signers, threshold }) => {
+const TransactionsList = () => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const currentVault = useSelector(selectCurrentVault);
-  const fetchAllLoading = useSelector((state) => state.transactions.fetchAllLoading);
+  const currentVaultId = useSelector(selectCurrentVaultId);
+  const fetchAllLoading = useSelector(
+    (state) => state.transactions.fetchAllLoading
+  );
+  const transactions = useSelector(
+    (state) => state.transactions.transactions_list
+  );
+  const signers = useSelector((state) =>
+    selectVaultSigners(state, currentVaultId)
+  );
+  const threshold = useSelector((state) =>
+    selectVaultThreshold(state, currentVaultId)
+  );
   const [selectedFilters, setSelectedFilters] = useState([PendingFilter]);
-  const [filteredTransactions, setFilteredTransactions] = useState(transactions);
-  const filters = [PendingFilter, ExecutedFilter, FailedFilter];
+  const [filteredTransactions, setFilteredTransactions] =
+    useState(transactions);
+  const [debugInfo, setDebugInfo] = useState({});
+  const filters = [PendingFilter, ExecutedFilter];
 
   useEffect(() => {
     if (isAuthenticated && currentVault) {
@@ -46,13 +70,41 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
 
   useEffect(() => {
     function applySelectedFilters(transactions) {
+      console.log("Applying selected filters to transactions", transactions);
+      const debugData = {
+        totalTransactions: transactions.length,
+        activeFilters: selectedFilters.map((f) => f.label),
+        filterResults: {},
+      };
+
       if (!selectedFilters.length) {
+        setDebugInfo({
+          ...debugData,
+          message: "No filters active - showing all transactions",
+        });
         return transactions;
       }
 
-      return transactions.filter((tx) =>
-        selectedFilters.some((filter) => filter.fn(tx))
-      );
+      const filtered = transactions.filter((tx) => {
+        const matchingFilters = selectedFilters.filter((filter) => {
+          const matches = filter.fn(tx);
+          if (!debugData.filterResults[filter.label]) {
+            debugData.filterResults[filter.label] = {
+              matched: 0,
+              total: transactions.length,
+            };
+          }
+          if (matches) {
+            debugData.filterResults[filter.label].matched++;
+          }
+          return matches;
+        });
+        return matchingFilters.length > 0;
+      });
+
+      debugData.filteredCount = filtered.length;
+      setDebugInfo(debugData);
+      return filtered;
     }
 
     setFilteredTransactions(applySelectedFilters(transactions));
@@ -66,7 +118,7 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
     );
   }
 
-  if (!transactions.length) {
+  if (!transactions?.length) {
     return <EmptyTransactions />;
   }
 
@@ -85,6 +137,7 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
           singleSelect={true}
         />
       </HStack>
+
       {filteredTransactions.map((tx) => (
         <TransactionItem
           key={tx.id}
@@ -98,7 +151,8 @@ const TransactionsList = ({ transactions, signers, threshold }) => {
 };
 
 TransactionsList.propTypes = {
-  transactions: PropTypes.array.isRequired,
+  signers: PropTypes.array,
+  threshold: PropTypes.number,
 };
 
 export default TransactionsList;

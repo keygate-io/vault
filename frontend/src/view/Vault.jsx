@@ -1,5 +1,6 @@
-import { VStack, Box, HStack, Text, Link } from "@chakra-ui/react";
+import { VStack, Box, HStack, Text, Link, Button } from "@chakra-ui/react";
 import { PlusIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BalanceDisplay from "@/components/ui/balance-display";
@@ -12,37 +13,41 @@ import { useDispatch, useSelector } from "react-redux";
 import { Feature } from "@/components/ui/feature";
 import { Toaster } from "@/components/ui/toaster";
 import {
-  selectVaults,
   selectVaultById,
   selectIsCreatingVault,
+  fetchVaultBalance,
+  selectIsBalanceLoading,
+  selectBalanceError,
 } from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
 import { focus } from "@/state/session_slice";
+import { ReceiveModal } from "@/components/ui/receive-modal";
 
 function Vault() {
   const { vaultId } = useParams();
   const dispatch = useDispatch();
-  const { transactions_list } = useSelector((state) => state.transactions);
-  const vaults = useSelector((state) => selectVaults(state));
   const vault = useSelector((state) => selectVaultById(state, vaultId));
   const isCreating = useSelector(selectIsCreatingVault);
   const isLoading = useSelector((state) => state.vaults.loading);
+  const isBalanceLoading = useSelector(selectIsBalanceLoading);
+  const balanceError = useSelector(selectBalanceError);
   const navigate = useNavigate();
   const createTransactionRef = useRef(null);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log("isLoading", isLoading);
-    console.log("isCreating", isCreating);
-    console.log("vault", vault);
-
     if (!isLoading && !isCreating && !vault) {
       navigate("/vaults");
       return;
     }
 
     if (vault && !isCreating) {
-      dispatch(focus(vault));
+      const initVault = async () => {
+        await dispatch(focus(vault));
+        dispatch(fetchVaultBalance(vault.id));
+      };
+      initVault();
     }
   }, [vault, vaultId, dispatch, isCreating, isLoading, navigate]);
 
@@ -85,7 +90,7 @@ function Vault() {
 
   return (
     <VStack spacing={4} align="stretch">
-      <HStack mb={4}>
+      <HStack mb={4} justify="space-between">
         <Link
           variant="ghost"
           colorScheme="gray"
@@ -94,11 +99,23 @@ function Vault() {
           <ArrowLeftIcon width={16} />
           Back to Vaults
         </Link>
+        {vault?.canister_id && (
+          <Button size="sm" onClick={() => setIsReceiveModalOpen(true)}>
+            <HStack spacing={2}>
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              <Text>Receive</Text>
+            </HStack>
+          </Button>
+        )}
       </HStack>
 
       <Feature name="vaults">
         <Box>
-          <BalanceDisplay symbol="ICP" />
+          <BalanceDisplay
+            symbol="ICP"
+            isLoading={isBalanceLoading}
+            error={balanceError}
+          />
         </Box>
       </Feature>
 
@@ -132,12 +149,18 @@ function Vault() {
             )}
           </CollapsibleButton>
 
-          <TransactionsList transactions={transactions_list} />
+          <TransactionsList />
         </VStack>
       </Feature>
 
       <DevModePanel />
       <Toaster />
+
+      <ReceiveModal
+        isOpen={isReceiveModalOpen}
+        onClose={() => setIsReceiveModalOpen(false)}
+        canisterId={vault?.canister_id}
+      />
     </VStack>
   );
 }

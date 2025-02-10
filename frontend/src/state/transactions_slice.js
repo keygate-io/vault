@@ -151,7 +151,6 @@ const transactionsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchAllTransactions.fulfilled, (state, action) => {
-        console.log("fetchAllTransactions fulfilled payload", action.payload);
         state.fetchAllLoading = false;
         state.transactions_list = action.payload;
         state.error = null;
@@ -189,6 +188,7 @@ const transactionsSlice = createSlice({
       })
       .addCase(createTransaction.fulfilled, (state, action) => {
         state.createLoading = false;
+        console.log("createTransaction fulfilled payload", action.payload);
         state.transactions_list.push(action.payload);
         state.error = null;
       })

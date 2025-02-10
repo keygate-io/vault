@@ -2,6 +2,11 @@ import { generateMockVaults } from "@/utils/mockDataGenerator";
 import { GlobalSettings } from "@/constants/global_config";
 import { injectable, inject, decorate } from "inversify";
 import { SESSION_REPOSITORY } from "./session";
+import { idlFactory as IcpLedgerIDLFactory } from "../../idl/icp_ledger_canister/icp_ledger_canister.did.js";
+import { Actor } from "@dfinity/agent";
+import { Principal } from "@dfinity/principal";
+import { e8sToFloat } from "@/utils/floatPrecision";
+import { AccountIdentifier } from "@dfinity/ledger-icp";
 
 // Helper function to create a vault object
 export function createVault(params = {}) {
@@ -74,7 +79,7 @@ export class ICPVaultsRepository {
     }
 
     const result = await managerActor.createVault(name);
-    
+
     if (result.err) {
       const error = new Error(result.err);
       error.isApiError = true;
@@ -84,10 +89,46 @@ export class ICPVaultsRepository {
     const vault = result.ok;
     // Map the response to match our frontend model
     return {
-      id: Object.keys(await this.getAll()).length, // Get the next available ID
+      id: Object.keys(await this.getAll()).length - 1, // Get the next available ID
       name: vault.name,
       canister_id: vault.canister_id.toString(),
     };
+  }
+
+  async getBalance() {
+    const focusedVault = this.sessionRepository.FocusedVault;
+    if (!focusedVault) {
+      throw new Error("No vault is currently focused");
+    }
+
+    if (!this.sessionRepository.AuthenticatedAgent) {
+      throw new Error("No authenticated agent available");
+    }
+
+    try {
+      const ledgerActor = Actor.createActor(IcpLedgerIDLFactory, {
+        canisterId: GlobalSettings.session.icp.ledger_canister_id,
+        agent: this.sessionRepository.AuthenticatedAgent,
+      });
+
+      const principal = Principal.fromText(focusedVault.canister_id);
+
+      const account = AccountIdentifier.fromPrincipal({
+        principal,
+        subaccount: [],
+      }).toUint8Array();
+
+      // Get the balance using the vault's canister ID as the account
+      const balance = await ledgerActor.account_balance({ account });
+
+      const balance_float = e8sToFloat(balance.e8s);
+
+      // Convert e8s to ICP float value
+      return balance_float;
+    } catch (error) {
+      console.error("Error getting vault balance:", error);
+      throw error;
+    }
   }
 }
 

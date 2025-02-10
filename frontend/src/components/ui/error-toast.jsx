@@ -17,27 +17,38 @@ export const ErrorToast = ({ message, technicalDetails }) => {
     setTimeout(() => setCopied(false), 5000);
   };
 
+  const shouldShowCopy = () => {
+    try {
+      const details = JSON.parse(technicalDetails);
+      return details.code === "500";
+    } catch {
+      return false;
+    }
+  };
+
   return (
     <VStack spacing={2} align="flex-start">
       <Text>{message}</Text>
-      <Button
-        onClick={handleCopy}
-        variant="plain"
-        size="xs"
-        color={mutedColor}
-        _hover={{ color: hoverColor }}
-        p={0}
-        height="auto"
-      >
-        <HStack spacing={1.5}>
-          {copied ? (
-            <ClipboardDocumentCheckIcon width={14} height={14} />
-          ) : (
-            <ClipboardIcon width={14} height={14} />
-          )}
-          <Text>{copied ? "Copied!" : "Copy error details"}</Text>
-        </HStack>
-      </Button>
+      {technicalDetails && shouldShowCopy() && (
+        <Button
+          onClick={handleCopy}
+          variant="plain"
+          size="xs"
+          color={mutedColor}
+          _hover={{ color: hoverColor }}
+          p={0}
+          height="auto"
+        >
+          <HStack spacing={1.5}>
+            {copied ? (
+              <ClipboardDocumentCheckIcon width={14} height={14} />
+            ) : (
+              <ClipboardIcon width={14} height={14} />
+            )}
+            <Text>{copied ? "Copied!" : "Copy error details"}</Text>
+          </HStack>
+        </Button>
+      )}
     </VStack>
   );
 };

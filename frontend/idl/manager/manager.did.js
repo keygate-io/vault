@@ -11,7 +11,6 @@ export const idlFactory = ({ IDL }) => {
   const Manager = IDL.Service({
     'addOwner' : IDL.Func([IDL.Nat, IDL.Principal], [Result_3], []),
     'createVault' : IDL.Func([IDL.Text], [Result_1], []),
-    'executeTransaction' : IDL.Func([IDL.Nat, IDL.Nat], [Result_3], []),
     'getOrCreateUser' : IDL.Func([], [Result], []),
     'getOwners' : IDL.Func([IDL.Nat], [Result_2], ['query']),
     'getUser' : IDL.Func([], [Result], []),

@@ -48,7 +48,6 @@ const ActionExecuteButton = ({ tx }) => {
   const isExecuting = useSelector((state) => isExecutionLoading(state, tx.id));
 
   const handleExecute = () => {
-    console.log("dispatching execute transaction for vault", vaultId);
     dispatch(executeTransaction({ vaultId: vaultId, transactionId: tx.id }));
   };
 
@@ -80,7 +79,6 @@ const ActionApproveButton = ({ txId, vaultId }) => {
   );
 
   const handleApprove = () => {
-    console.log("Dispatching decision");
     dispatch(
       recordDecision({
         vaultId,
@@ -88,7 +86,6 @@ const ActionApproveButton = ({ txId, vaultId }) => {
         isApproval: true,
       })
     );
-    console.log("Dispatched decision");
   };
 
   if (hasApproved) {
@@ -173,10 +170,9 @@ const TransactionItem = ({ tx }) => {
     <Box p={4} borderWidth={1} borderRadius="md">
       <HStack justify="space-between" align="center">
         <VStack align="start" spacing={1}>
-          <AddressDisplay
-            address={tx.recipient}
-            type={tx.recipient.startsWith("rrkah") ? "principal" : "account"}
-          />
+          {tx.recipient && (
+            <AddressDisplay address={tx.recipient} type="principal" />
+          )}
           <HStack>
             <SentimentTransactionBadge
               content={`${floatPrecision(tx.amount)} ICP`}

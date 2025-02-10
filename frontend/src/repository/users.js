@@ -116,7 +116,6 @@ export class ICPUserRepository extends UserRepository {
 
     try {
       const users = await managerActor.getUsers();
-      console.log("Users:", users);
       return users.map(user => 
         new User({
           id: user.principal.toString(),

@@ -26,6 +26,7 @@ const GlobalSettings = {
     icp: {
       host: "http://localhost:5173",
       manager_canister_id: import.meta.env.VITE_CANISTER_ID_MANAGER,
+      ledger_canister_id: import.meta.env.VITE_CANISTER_ID_ICP_LEDGER,
     },
     enabled: true,
   },

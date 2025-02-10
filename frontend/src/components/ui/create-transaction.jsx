@@ -11,40 +11,16 @@ import { useDispatch } from "react-redux";
 import { createTransaction } from "@/state/transactions_slice";
 import { Field } from "@/components/ui/field";
 import { isValidPrincipal } from "@/utils/cryptoAddressFormats";
-import { isValidAccountIdentifier } from "@/utils/cryptoAddressFormats";
 import { floatToE8s } from "@/utils/floatPrecision";
 import PropTypes from "prop-types";
 
-const CreateTransaction = ({ onClose, vaultId, onError }) => {
+const CreateTransaction = ({ onClose, onError }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [formStep, setFormStep] = useState("idle");
   const [isValidRecipient, setIsValidRecipient] = useState(true);
 
   const dispatch = useDispatch();
-
-  const simulateSending = () => {
-    setFormStep("sending");
-    setTimeout(() => {
-      scheduleFormCleanup();
-      scheduleFormClose();
-      setFormStep("sent");
-    }, 2000);
-  };
-
-  const scheduleFormCleanup = () => {
-    setTimeout(() => {
-      setRecipient("");
-      setAmount("");
-      setFormStep("idle");
-    }, 2000);
-  };
-
-  const scheduleFormClose = () => {
-    setTimeout(() => {
-      onClose();
-    }, 1000);
-  };
 
   const deriveStepDisplayText = () => {
     if (formStep === "sending") {
@@ -59,8 +35,7 @@ const CreateTransaction = ({ onClose, vaultId, onError }) => {
   };
 
   const handleCreateTransaction = async () => {
-    const isValid =
-      isValidPrincipal(recipient) || isValidAccountIdentifier(recipient);
+    const isValid = isValidPrincipal(recipient);
 
     setIsValidRecipient(isValid);
 
@@ -111,7 +86,7 @@ const CreateTransaction = ({ onClose, vaultId, onError }) => {
             size="sm"
             errorText={
               !isValidRecipient
-                ? "Please enter a principal (e.g. rrkah-fqaaa-aaaaa-aaaaq-cai) or an account identifier (64 characters, hexadecimal)."
+                ? "Please enter a valid principal ID (e.g. rrkah-fqaaa-aaaaa-aaaaq-cai)"
                 : undefined
             }
             invalid={!isValidRecipient}
@@ -149,10 +124,7 @@ const CreateTransaction = ({ onClose, vaultId, onError }) => {
         </VStack>
 
         <Box overflow="hidden" minHeight="20px">
-          <Text
-            fontSize="xs"
-            color="gray.500"
-          >
+          <Text fontSize="xs" color="gray.500">
             {deriveStepDisplayText()}
           </Text>
         </Box>
@@ -175,7 +147,6 @@ const CreateTransaction = ({ onClose, vaultId, onError }) => {
 
 CreateTransaction.propTypes = {
   onClose: PropTypes.func.isRequired,
-  vaultId: PropTypes.string.isRequired,
   onError: PropTypes.func,
 };
 

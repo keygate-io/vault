@@ -24,6 +24,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     private stable var transactionCount : Nat = 0;
     private stable var transactions = Map.new<Nat, Types.Transaction>();
     private stable var decisions = Map.new<Nat, [(Principal, Bool)]>();
+    private stable var invitations = Map.new<Nat, Principal>();
 
     private stable var threshold : Nat = initThreshold;
 
@@ -45,13 +46,17 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
             });
         };
 
-        let toAccount = Principal.toBlob(to);
+        let toAccount : Types.Account = {
+            owner = to;
+            subaccount = null;
+        };
 
         let transaction : Types.Transaction = {
             id = transactionCount;
-            amount = { e8s = value };
+            amount = { e8s = Nat64.fromNat(value) };
             to = toAccount;
             created_at_time = ?Time.now();
+            executed = false;
         };
 
         // Assign the next transaction ID and update state
@@ -118,7 +123,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         };
     };
 
-    public shared({ caller }) func executeTransaction(txId: Nat) : async Result.Result<(), Types.ApiError> {
+    public shared({ caller }) func executeTransaction(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
         // Check if the caller is an owner
         if (not isOwnerPrincipal(caller)) {
             return #err({
@@ -168,33 +173,84 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                         };
 
                         // Prepare transfer arguments
-                        let transferArgs : IcpLedger.TransferArgs = {
-                            memo = 0;
-                            amount = { e8s = Nat64.fromNat(transaction.amount.e8s) };
-                            fee = { e8s = 10_000 };
-                            from_subaccount = null;
+                        let transferArgs : Types.TransferArgs = {
                             to = transaction.to;
+                            fee = ?10_000;
+                            memo = null;
+                            from_subaccount = null;
                             created_at_time = switch (transaction.created_at_time) {
                                 case (null) { null };
-                                case (?time) { ?{ timestamp_nanos = Nat64.fromIntWrap(time) } };
+                                case (?time) { ?Nat64.fromIntWrap(time) };
                             };
+                            amount = Nat64.toNat(transaction.amount.e8s);
                         };
 
                         Debug.print(debug_show(transferArgs));
 
                         try {
-                            // Execute transfer
-                            let transferResult = await IcpLedger.transfer(transferArgs);
+                            // Execute transfer using ICRC1 transfer
+                            let transferResult = await IcpLedger.icrc1_transfer(transferArgs);
                             
                             switch (transferResult) {
                                 case (#Err(transferError)) {
-                                    return #err({
-                                        code = 500;
-                                        message = "Transfer failed: " # debug_show(transferError);
-                                        details = ?(debug_show(transferError))
-                                    });
+                                    switch (transferError) {
+                                        case (#BadFee(detail)) {
+                                            #err({
+                                                code = 500;
+                                                message = "Invalid fee amount";
+                                                details = ?(debug_show(detail))
+                                            })
+                                        };
+                                        case (#InsufficientFunds(detail)) {
+                                            #err({
+                                                code = 400;
+                                                message = "Insufficient funds for transfer";
+                                                details = ?(debug_show(detail))
+                                            })
+                                        };
+                                        case (#TxTooOld(detail)) {
+                                            #err({
+                                                code = 500;
+                                                message = "Transaction request is too old";
+                                                details = ?(debug_show(detail))
+                                            })
+                                        };
+                                        case (#TxCreatedInFuture) {
+                                            #err({
+                                                code = 500;
+                                                message = "Transaction timestamp is in the future";
+                                                details = null
+                                            })
+                                        };
+                                        case (#TxDuplicate(detail)) {
+                                            #err({
+                                                code = 500;
+                                                message = "Transaction is a duplicate";
+                                                details = ?(debug_show(detail))
+                                            })
+                                        };
+                                    }
                                 };
-                                case (#Ok(_)) { return #ok(()) };
+                                case (#Ok(_)) { 
+                                    // Mark transaction as executed
+                                    let updatedTransaction = {
+                                        id = transaction.id;
+                                        amount = transaction.amount;
+                                        to = transaction.to;
+                                        created_at_time = transaction.created_at_time;
+                                        executed = true;
+                                    };
+                                    Map.set(transactions, nhash, transaction.id, updatedTransaction);
+                                    
+                                    // Return the updated transaction details
+                                    #ok({
+                                        id = txId;
+                                        transaction = updatedTransaction;
+                                        decisions = confirmations;
+                                        threshold = threshold;
+                                        required = threshold;
+                                    })
+                                };
                             };
                         } catch (error : Error) {
                             return #err({
@@ -210,7 +266,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     };
 
     // Owner Management
-    public shared({ caller }) func addOwner(owner: Principal) : async Result.Result<(), Types.ApiError> {
+    public shared({ caller }) func invite(principalId: Principal) : async Result.Result<(), Types.ApiError> {
         // Validate caller is an owner
         if (not isOwnerPrincipal(caller)) {
             return #err({
@@ -221,7 +277,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         };
 
         // Check if principal is already an owner
-        if (isOwnerPrincipal(owner)) {
+        if (isOwnerPrincipal(principalId)) {
             return #err({
                 code = 400;
                 message = "Principal is already an owner";
@@ -229,9 +285,10 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
             });
         };
 
-        // Add new owner
-        owners := Array.append(owners, [owner]);
-        isOwner := Array.append(isOwner, [(owner, true)]);
+        // Add principal to invitations
+        Map.set(invitations, nhash, transactionCount, principalId);
+
+        transactionCount += 1;
 
         #ok()
     };
@@ -368,30 +425,6 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         #ok()
     };
 
-    // Security & Modules
-    public shared({ caller }) func setGuard(guard: Principal) : async Result.Result<(), Types.ApiError> {
-        #err({
-            code = 501;
-            message = "Not implemented";
-            details = null;
-        })
-    };
-
-    public shared({ caller }) func enableModule(mod: Principal) : async Result.Result<(), Types.ApiError> {
-        #err({
-            code = 501;
-            message = "Not implemented";
-            details = null;
-        })
-    };
-
-    public shared({ caller }) func disableModule(mod: Principal) : async Result.Result<(), Types.ApiError> {
-        #err({
-            code = 501;
-            message = "Not implemented";
-            details = null;
-        })
-    };
 
     // Utility & Queries
     public query func getTransactionDetails(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
@@ -419,7 +452,6 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                             decisions = decisions;
                             threshold = threshold;
                             required = threshold;
-                            executed = false;
                         })
                     };
                 }
@@ -433,10 +465,6 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
 
     public query func getOwners() : async [Principal] {
         owners
-    };
-
-    public query func getCanisterId() : async Principal {
-        Principal.fromActor(this)
     };
 
     public shared query func getTransactions() : async [Types.TransactionDetails] {
@@ -456,7 +484,6 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                     decisions = decisions_array;
                     threshold = threshold;
                     required = threshold;
-                    executed = false;
                 }
             }
         )

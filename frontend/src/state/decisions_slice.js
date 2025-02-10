@@ -117,7 +117,6 @@ export const decisionsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchDecisions.fulfilled, (state, action) => {
-        console.log("fetchDecisions fulfilled payload", action.payload);
         state.decisions_map = action.payload;
         state.error = null;
       })

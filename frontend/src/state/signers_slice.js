@@ -11,7 +11,6 @@ export const fetchSignersForVault = createAsyncThunk(
     try {
       const repository = container.get(SIGNER_REPOSITORY);
       const signers = await repository.getSignersByVaultId(vaultId);
-      console.log("Got signers for vault", vaultId, signers);
       return {
         vaultId,
         signers,

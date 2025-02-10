@@ -1,13 +1,15 @@
-function isValidAccountIdentifier(address) {
-  const hexRegex = /^[0-9a-fA-F]{64}$/;
-  return hexRegex.test(address);
+import { Principal } from "@dfinity/principal";
+
+function isValidPrincipal(principal) {
+  try {
+    if (!principal) return false;
+    Principal.fromText(principal);
+    return true;
+  } catch (_) {
+    // Any error means the principal is invalid
+    return false;
+  }
 }
 
-function isValidPrincipal(address) {
-  // Principal IDs follow the format: xxxxx-xxxxx-xxxxx-xxxxx-cai
-  const principalRegex =
-    /^[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-cai$/;
-  return principalRegex.test(address);
-}
-
-export { isValidAccountIdentifier, isValidPrincipal };
+// We're removing the AccountIdentifier validation since we're moving to principal-based addressing
+export { isValidPrincipal };

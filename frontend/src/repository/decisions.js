@@ -1,14 +1,9 @@
 import { injectable, inject, decorate } from "inversify";
 import { SESSION_REPOSITORY } from "./session";
-import { Principal } from "@dfinity/principal";
 
 // Repository interface, abstract class
 class DecisionRepository {
   async getAll() {
-    throw new Error("Not implemented");
-  }
-
-  async getByTransactionId(vaultId, txId) {
     throw new Error("Not implemented");
   }
 
@@ -27,10 +22,6 @@ export class InMemoryDecisionRepository extends DecisionRepository {
 
   async getAll() {
     return this.decisions;
-  }
-
-  async getByTransactionId(vaultId, txId) {
-    return this.decisions[vaultId]?.[txId] || [];
   }
 
   async recordDecision(vaultId, txId, decision, userId) {
@@ -81,7 +72,6 @@ export class ICPDecisionRepository extends DecisionRepository {
 
       // For each transaction, create an array of [userId, isApproval] pairs
       transactions.forEach((tx) => {
-        console.log("tx", tx);
         const txId = tx.id.toString();
         const confirmedOwners = new Set(
           tx.decisions
@@ -98,43 +88,9 @@ export class ICPDecisionRepository extends DecisionRepository {
         decisions_map[focusedVault.id][txId] = decisions;
       });
 
-      console.log("decisions_map", decisions_map);
-
       return decisions_map;
     } catch (error) {
       console.error("Error in getAll:", error);
-      throw error;
-    }
-  }
-
-  async getByTransactionId(vaultId, txId) {
-    const vaultActor = this.sessionRepository.VaultActor;
-    if (!vaultActor) {
-      throw new Error("Vault actor not initialized");
-    }
-
-    try {
-      const result = await vaultActor.getTransactionDetails(BigInt(txId));
-
-      if (result.err) {
-        const error = new Error(
-          result.err.message || "Failed to get transaction details"
-        );
-        error.code = result.err.code;
-        error.isApiError = true;
-        throw error;
-      }
-
-      const owners = await vaultActor.getOwners();
-      console.log("owners", owners);
-
-      // Return array of [userId, decision] pairs based on confirmations
-      return owners.map((owner) => [
-        owner.toString(),
-        false, // Default to false, will be updated below if confirmed
-      ]);
-    } catch (error) {
-      console.error("Error in getByTransactionId:", error);
       throw error;
     }
   }

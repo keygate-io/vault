@@ -16,9 +16,15 @@
     },
     "icp_ledger_canister": {
       "type": "custom",
-      "candid": "https://raw.githubusercontent.com/dfinity/ic/d87954601e4b22972899e9957e800406a0a6b929/rs/rosetta-api/icp_ledger/ledger.did",
-      "wasm": "https://download.dfinity.systems/ic/d87954601e4b22972899e9957e800406a0a6b929/canisters/ledger-canister.wasm.gz",
+      "candid": "https://raw.githubusercontent.com/dfinity/ic/fb162931586aeea5f21cb19ec6c73382f5fa4fd6/rs/ledger_suite/icp/ledger.did",
+      "wasm": "https://download.dfinity.systems/ic/fb162931586aeea5f21cb19ec6c73382f5fa4fd6/canisters/ledger-canister.wasm.gz",
       "specified_id": "ryjl3-tyaaa-aaaaa-aaaba-cai",
+      "declarations": {
+        "output": "frontend/idl/icp_ledger_canister",
+        "bindings": [
+          "js"
+        ]
+      },
       "remote": {
         "id": {
           "ic": "ryjl3-tyaaa-aaaaa-aaaba-cai"
@@ -34,18 +40,10 @@
         "bindings": [
           "js"
         ]
-      }
-    },
-    "vault_test": {
-      "main": "backend/vault_test.mo",
-      "type": "motoko",
-      "specified_id": "qbsdf-aqaaa-aaaak-qloba-cai",
-      "declarations": {
-        "output": "frontend/idl/vault_test",
-        "bindings": [
-          "js"
-        ]
-      }
+      },
+      "dependencies": [
+        "icp_ledger_canister"
+      ]
     }
   },
   "defaults": {
