@@ -1,18 +1,35 @@
-import { HStack, VStack, Image, Link, Text } from "@chakra-ui/react";
+import {
+  HStack,
+  VStack,
+  Image,
+  Link,
+  Text,
+  IconButton,
+} from "@chakra-ui/react";
 import { ColorModeButton, useColorMode } from "@/components/ui/color-mode";
 import { Feature } from "@/components/ui/feature";
 import { DemoModal } from "./demo-modal";
 import { useState } from "react";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { PopupButton } from "@typeform/embed-react";
 import { useIdentity } from "@nfid/identitykit/react";
+import { useDispatch } from "react-redux";
+import { logout } from "@/state/session_slice";
 
 export default function Header() {
   const { colorMode } = useColorMode();
   const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
 
   const identity = useIdentity();
   const principal = identity?.getPrincipal()?.toString();
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   return (
     <VStack spacing={2} align="stretch">
@@ -24,7 +41,17 @@ export default function Header() {
           alt="Keygate Logo"
           height={{ base: "24px", sm: "28px", lg: "32px" }}
         />
-        <ColorModeButton />
+        <HStack spacing={2}>
+          {/* <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label="Logout"
+            onClick={handleLogout}
+          >
+            <ArrowRightOnRectangleIcon width={20} height={20} />
+          </IconButton> */}
+          <ColorModeButton />
+        </HStack>
       </HStack>
       <Feature name="demo">
         <Link

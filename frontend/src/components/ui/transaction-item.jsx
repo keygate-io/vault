@@ -18,7 +18,7 @@ import {
   selectApprovalsCount,
   isTransactionLoading,
 } from "@/state/decisions_slice";
-import { selectVaultThreshold } from "@/state/vaults_slice";
+import { selectVaultThreshold, fetchVaultBalance } from "@/state/vaults_slice";
 import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
 import { selectVaultSigners } from "@/state/signers_slice";
 import { selectUsersByIdArray } from "@/state/users_slice";
@@ -48,8 +48,11 @@ const ActionExecuteButton = ({ tx }) => {
 
   const isExecuting = useSelector((state) => isExecutionLoading(state, tx.id));
 
-  const handleExecute = () => {
-    dispatch(executeTransaction({ vaultId: vaultId, transactionId: tx.id }));
+  const handleExecute = async () => {
+    await dispatch(
+      executeTransaction({ vaultId: vaultId, transactionId: tx.id })
+    );
+    dispatch(fetchVaultBalance(vaultId));
   };
 
   return (
