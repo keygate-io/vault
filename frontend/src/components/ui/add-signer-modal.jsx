@@ -7,8 +7,30 @@ import {
   DialogCloseTrigger,
 } from "./dialog";
 import { Text, Button, Input, VStack } from "@chakra-ui/react";
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { invite } from "@/state/invitations_slice";
 
-export function AddSignerModal({ isOpen, onClose }) {
+export function AddSignerModal({ isOpen, onClose, vaultId }) {
+  const [principalId, setPrincipalId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useDispatch();
+
+  const handleInvite = async () => {
+    if (!principalId.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await dispatch(invite({ vaultId, principalId })).unwrap();
+      onClose();
+    } catch (error) {
+      // Error handling is now done in the slice
+      console.error("Error inviting signer:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <DialogRoot open={isOpen} onOpenChange={({ open }) => !open && onClose()}>
       <DialogContent size="md">
@@ -20,10 +42,25 @@ export function AddSignerModal({ isOpen, onClose }) {
           <VStack spacing={4} align="stretch">
             <Text fontSize="sm" color="gray.500">
               Enter the Principal ID of the user you want to add as a signer to
-              this vault.
+              this vault. This will create a proposal that needs to be approved
+              by other signers.
             </Text>
-            <Input placeholder="Principal ID" size="sm" fontFamily="mono" />
-            <Button width="full" size="sm" colorScheme="blue">
+            <Input
+              placeholder="Principal ID"
+              size="sm"
+              fontFamily="mono"
+              value={principalId}
+              onChange={(e) => setPrincipalId(e.target.value)}
+            />
+            <Button
+              width="full"
+              size="sm"
+              colorScheme="blue"
+              onClick={handleInvite}
+              isLoading={isSubmitting}
+              loadingText="Creating Proposal..."
+              isDisabled={!principalId.trim()}
+            >
               Invite
             </Button>
           </VStack>

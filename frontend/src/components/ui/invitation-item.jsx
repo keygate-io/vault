@@ -1,14 +1,9 @@
 import { HStack, VStack, Button, Box, Text } from "@chakra-ui/react";
-import {
-  CheckCircleIcon,
-  CheckBadgeIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/solid";
+import { CheckCircleIcon, UserPlusIcon } from "@heroicons/react/24/solid";
 import AddressDisplay from "@/components/ui/address-display";
 import ApprovalGrid from "@/components/ui/approval-grid";
 import { SentimentTransactionBadge } from "@/components/ui/transaction-badge";
 import PropTypes from "prop-types";
-import { floatPrecision } from "@/utils/floatPrecision";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
@@ -19,23 +14,24 @@ import {
   isTransactionLoading,
 } from "@/state/decisions_slice";
 import { selectVaultThreshold } from "@/state/vaults_slice";
-import { selectCurrentVaultId, selectCurrentUser } from "@/state/session_slice";
-import { selectVaultSigners } from "@/state/signers_slice";
+import { selectCurrentUser } from "@/state/session_slice";
+import {
+  selectVaultSigners,
+  fetchSignersForVault,
+} from "@/state/signers_slice";
 import { selectUsersByIdArray } from "@/state/users_slice";
 import {
-  executeTransaction,
-  isExecutionLoading,
-} from "@/state/transactions_slice";
+  executeInvitation,
+  selectInvitationExecutionLoading,
+} from "@/state/invitations_slice";
 import { selectApprovers, selectRejectors } from "@/state/decisions_slice";
-import { Avatar } from "@/components/ui/avatar/avatar";
-import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 
-const ActionExecuteButton = ({ tx }) => {
+const ActionExecuteButton = ({ invitation }) => {
   const dispatch = useDispatch();
   const { vaultId } = useParams();
 
   const approvals = useSelector((state) =>
-    selectApprovalsCount(state, vaultId, tx.id)
+    selectApprovalsCount(state, vaultId, invitation.id)
   );
 
   const threshold = useSelector((state) =>
@@ -46,10 +42,20 @@ const ActionExecuteButton = ({ tx }) => {
 
   const adjustedThreshold = Math.min(threshold, signers.length);
 
-  const isExecuting = useSelector((state) => isExecutionLoading(state, tx.id));
+  const isExecuting = useSelector((state) =>
+    selectInvitationExecutionLoading(state, invitation.id)
+  );
 
-  const handleExecute = () => {
-    dispatch(executeTransaction({ vaultId: vaultId, transactionId: tx.id }));
+  const handleExecute = async () => {
+    try {
+      await dispatch(
+        executeInvitation({ vaultId: vaultId, invitationId: invitation.id })
+      ).unwrap();
+      console.log("Fetching signers for vault", vaultId);
+      await dispatch(fetchSignersForVault(vaultId));
+    } catch (error) {
+      console.error("Error executing invitation:", error);
+    }
   };
 
   return (
@@ -68,24 +74,24 @@ const ActionExecuteButton = ({ tx }) => {
 };
 
 ActionExecuteButton.propTypes = {
-  tx: PropTypes.object.isRequired,
+  invitation: PropTypes.object.isRequired,
 };
 
-const ActionApproveButton = ({ vaultId, proposalId }) => {
+const ActionApproveButton = ({ invitationId, vaultId }) => {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) =>
-    isTransactionLoading(state, proposalId)
+    isTransactionLoading(state, invitationId)
   );
   const currentUser = useSelector((state) => selectCurrentUser(state));
   const hasApproved = useSelector((state) =>
-    hasUserApprovedThisProposal(state, vaultId, proposalId, currentUser?.id)
+    hasUserApprovedThisProposal(state, vaultId, invitationId, currentUser?.id)
   );
 
   const handleApprove = () => {
     dispatch(
       recordDecision({
         vaultId,
-        transactionId: proposalId,
+        transactionId: invitationId,
         isApproval: true,
       })
     );
@@ -117,25 +123,24 @@ const ActionApproveButton = ({ vaultId, proposalId }) => {
 };
 
 ActionApproveButton.propTypes = {
+  invitationId: PropTypes.number.isRequired,
   vaultId: PropTypes.string.isRequired,
-  proposalId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-    .isRequired,
 };
 
-const TransactionItem = ({ tx }) => {
+const InvitationItem = ({ invitation }) => {
   const { vaultId } = useParams();
   const signers = useSelector((state) => selectVaultSigners(state, vaultId));
   const threshold = useSelector((state) =>
     selectVaultThreshold(state, vaultId)
   );
   const approvals = useSelector((state) =>
-    selectApprovalsCount(state, vaultId, tx.id)
+    selectApprovalsCount(state, vaultId, invitation.id)
   );
   const approversUserId = useSelector((state) =>
-    selectApprovers(state, vaultId, tx.id)
+    selectApprovers(state, vaultId, invitation.id)
   );
   const rejectorsUserId = useSelector((state) =>
-    selectRejectors(state, vaultId, tx.id)
+    selectRejectors(state, vaultId, invitation.id)
   );
 
   const approvers = useSelector((state) =>
@@ -149,80 +154,55 @@ const TransactionItem = ({ tx }) => {
   const [derivedSentimentColor, setDerivedSentimentColor] = useState("");
 
   useEffect(() => {
-    if (tx.executed) {
+    if (invitation.executed) {
       setDerivedSentimentColor("kg.good");
     } else {
       setDerivedSentimentColor("kg.neutral");
     }
-  }, [tx.executed]);
+  }, [invitation.executed]);
 
   function conditionallyRenderActionButton() {
-    if (tx.executed) {
+    if (invitation.executed) {
       return;
     }
 
     if (approvals >= Math.min(threshold, signers.length)) {
-      return <ActionExecuteButton tx={tx} />;
+      return <ActionExecuteButton invitation={invitation} />;
     }
 
-    return <ActionApproveButton vaultId={vaultId} proposalId={tx.id} />;
+    return (
+      <ActionApproveButton vaultId={vaultId} invitationId={invitation.id} />
+    );
   }
 
   function conditionallyRenderApprovalGrid() {
-    if (tx.executed) return null;
-    return <ApprovalGrid showThreshold={true} proposalId={tx.id} />;
+    if (invitation.executed) return null;
+    return <ApprovalGrid showThreshold={true} proposalId={invitation.id} />;
   }
 
   return (
     <Box p={4} borderWidth={1} borderRadius="md">
       <VStack spacing={3} align="stretch">
         <HStack spacing={2}>
-          <ArrowRightIcon width={16} height={16} style={{ color: "#718096" }} />
+          <UserPlusIcon width={16} height={16} style={{ color: "#718096" }} />
           <Text fontSize="sm" color="gray.500" fontWeight="medium">
-            Transfer
+            Signer Invitation
           </Text>
         </HStack>
         <HStack justify="space-between" align="center">
           <VStack align="start" spacing={1}>
-            {tx.recipient && (
-              <AddressDisplay address={tx.recipient} type="principal" />
+            {invitation.invitee && (
+              <AddressDisplay address={invitation.invitee} type="principal" />
             )}
             <HStack>
               <SentimentTransactionBadge
-                content={`${floatPrecision(tx.amount)} ICP`}
-                sentiment="kg.neutral"
+                content={`Invitation`}
+                sentiment="kg.good"
               />
               <SentimentTransactionBadge
-                content={tx.executed ? "Success" : "Pending"}
+                content={invitation.executed ? "Success" : "Pending"}
                 sentiment={derivedSentimentColor}
               />
-              {tx.executed && (
-                <AvatarGroup>
-                  {approvers.map((approver, index) => (
-                    <Box position="relative" key={approver.id}>
-                      <Avatar
-                        name={approver.name}
-                        src={approver.avatarUrl}
-                        fallback={approver.name[0]}
-                        ml={index === 0 ? 0 : -7}
-                        size="xs"
-                      />
-                      <Box
-                        position="absolute"
-                        bottom="-1"
-                        right="-1"
-                        zIndex={100}
-                      >
-                        <CheckBadgeIcon
-                          width={12}
-                          height={12}
-                          color="#22c55e"
-                        />
-                      </Box>
-                    </Box>
-                  ))}
-                </AvatarGroup>
-              )}
             </HStack>
           </VStack>
           <VStack align="end">
@@ -235,8 +215,8 @@ const TransactionItem = ({ tx }) => {
   );
 };
 
-TransactionItem.propTypes = {
-  tx: PropTypes.object.isRequired,
+InvitationItem.propTypes = {
+  invitation: PropTypes.object.isRequired,
 };
 
-export default TransactionItem;
+export default InvitationItem;

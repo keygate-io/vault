@@ -25,6 +25,7 @@ export const InformationalAvatar = React.forwardRef(
       children,
       isCurrentUser,
       popoverContent,
+      isPending,
       ...rest
     } = props;
 
@@ -63,7 +64,7 @@ export const InformationalAvatar = React.forwardRef(
               loading={loading}
               icon={icon}
               fallback={fallback}
-              label={isCurrentUser ? "You" : undefined}
+              label={isCurrentUser ? `You` : undefined}
               labelProps={{
                 bg: bgColor,
                 color: textColor,

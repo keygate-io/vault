@@ -12,15 +12,14 @@ import { e8sToFloat } from "@/utils/floatPrecision";
 
 // Helper function to create a transaction object
 export function createTransaction(params = {}) {
-  const { id, recipient, amount, isSuccessful, isExecuted, vault_id } = params;
+  const { id, recipient, amount, executed, vault_id } = params;
 
   return {
     id: id,
     vault_id: vault_id,
     recipient: recipient || "",
     amount: amount || 0,
-    isExecuted: isExecuted || false,
-    isSuccessful: isSuccessful || false,
+    executed: executed || false,
   };
 }
 
@@ -139,8 +138,7 @@ export class InMemoryTransactionRepository extends TransactionRepository {
 
     this.transactions[vault_id][tx_id] = {
       ...tx,
-      isExecuted: true,
-      isSuccessful: true,
+      executed: true,
     };
 
     return this.transactions[vault_id][tx_id];
@@ -157,11 +155,11 @@ export class InMemoryTransactionRepository extends TransactionRepository {
       .filter((tx) => {
         switch (status) {
           case "pending":
-            return !tx.isExecuted;
+            return !tx.executed;
           case "executed":
-            return tx.isExecuted && tx.isSuccessful;
+            return tx.executed;
           case "failed":
-            return !tx.isSuccessful;
+            return false; // Since we no longer track failures separately
           default:
             return false;
         }
@@ -178,7 +176,7 @@ export class ICPTransactionRepository extends TransactionRepository {
   async getAll() {
     const vaultActor = this.sessionRepository.VaultActor;
     const focusedVault = this.sessionRepository.FocusedVault;
-    
+
     if (!vaultActor) {
       throw new Error("Vault actor not initialized");
     }
@@ -189,15 +187,13 @@ export class ICPTransactionRepository extends TransactionRepository {
 
     try {
       const transactions = await vaultActor.getTransactions();
-      console.log("transactions: ", transactions);
 
       const formattedTransactions = transactions.map((tx) => ({
         id: tx.id.toString(),
         vault_id: focusedVault.canister_id,
-        recipient: tx.transaction.to.toString(),
-        amount: e8sToFloat(tx.transaction.amount),
-        isExecuted: tx.transaction.executed,
-        isSuccessful: tx.transaction.executed,
+        recipient: tx.action.Transaction.to.toString(),
+        amount: e8sToFloat(tx.action.Transaction.amount),
+        executed: tx.executed,
         threshold: Number(tx.threshold),
         decisions: tx.decisions.map(([principal, isApproved]) => [
           principal.toString(),
@@ -207,7 +203,7 @@ export class ICPTransactionRepository extends TransactionRepository {
 
       return formattedTransactions;
     } catch (error) {
-      console.error('Error in getAll:', error);
+      console.error("Error in getAll:", error);
       throw error;
     }
   }
@@ -248,8 +244,7 @@ export class ICPTransactionRepository extends TransactionRepository {
         recipient: tx.action.Transaction.to.toString(),
         amount: e8sToFloat(tx.action.Transaction.amount),
         created_at_time: tx.created_at_time.toString(),
-        isExecuted: false,
-        isSuccessful: false,
+        executed: false,
       };
 
       return parsedTx;
@@ -268,7 +263,6 @@ export class ICPTransactionRepository extends TransactionRepository {
     try {
       const result = await vaultActor.execute(BigInt(transaction_id));
 
-      // Check if result contains an error
       if (result && result.err) {
         throw {
           message: result.err.message || "Failed to execute proposal",
@@ -277,33 +271,30 @@ export class ICPTransactionRepository extends TransactionRepository {
         };
       }
 
-      console.log("Executed proposal:", result.ok);
-
       return {
         id: transaction_id,
         vault_id: vault_id,
-        recipient: result.ok.transaction.to.toString(),
-        amount: e8sToFloat(result.ok.transaction.amount),
-        isExecuted: true,
-        isSuccessful: true,
+        recipient: result.ok.action.Transaction.to.toString(),
+        amount: e8sToFloat(result.ok.action.Transaction.amount),
+        executed: true,
       };
     } catch (error) {
-      console.error('Error in execute:', error);
+      console.error("Error in execute:", error);
       throw error;
     }
   }
 
   async getByStatus(vault_id, status) {
     const transactions = await this.getAll();
-    
+
     return transactions.filter((tx) => {
       switch (status) {
         case "pending":
-          return !tx.isExecuted;
+          return !tx.executed;
         case "executed":
-          return tx.isExecuted && tx.isSuccessful;
+          return tx.executed;
         case "failed":
-          return !tx.isSuccessful;
+          return false; // Since we no longer track failures separately
         default:
           return false;
       }

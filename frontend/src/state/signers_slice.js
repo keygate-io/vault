@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { createSelector } from "reselect";
 import { container } from "@/inversify.config";
 import { SIGNER_REPOSITORY } from "@/repository/signers";
-
+import { toaster } from "@/components/ui/toaster";
 
 // Async thunks
 export const fetchSignersForVault = createAsyncThunk(
@@ -16,6 +16,14 @@ export const fetchSignersForVault = createAsyncThunk(
         signers,
       };
     } catch (error) {
+      console.error("Error in fetchSignersForVault:", error);
+      // toaster.create({
+      //   description: error.isApiError
+      //     ? error.message
+      //     : "Failed to fetch signers",
+      //   type: "error",
+      //   duration: error.isApiError ? 5000 : 3000,
+      // });
       return rejectWithValue(error.message);
     }
   }
@@ -27,8 +35,18 @@ export const addSignerToVault = createAsyncThunk(
     try {
       const repository = container.get(SIGNER_REPOSITORY);
       const signersMap = await repository.addSignerToWallet(vaultId, signerId);
+      toaster.create({
+        description: "Signer added successfully!",
+        type: "success",
+      });
       return signersMap;
     } catch (error) {
+      console.error("Error in addSignerToVault:", error);
+      toaster.create({
+        description: error.isApiError ? error.message : "Failed to add signer",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -43,8 +61,20 @@ export const removeSignerFromVault = createAsyncThunk(
         vaultId,
         signerId
       );
+      toaster.create({
+        description: "Signer removed successfully!",
+        type: "success",
+      });
       return signersMap;
     } catch (error) {
+      console.error("Error in removeSignerFromVault:", error);
+      toaster.create({
+        description: error.isApiError
+          ? error.message
+          : "Failed to remove signer",
+        type: "error",
+        duration: error.isApiError ? 5000 : 3000,
+      });
       return rejectWithValue(error.message);
     }
   }
@@ -53,6 +83,7 @@ export const removeSignerFromVault = createAsyncThunk(
 // Initial state
 const initialState = {
   signers_map: {},
+  invitations: [],
   loading: true,
   error: null,
 };
@@ -61,7 +92,11 @@ const initialState = {
 export const signersSlice = createSlice({
   name: "signers",
   initialState,
-  reducers: {},
+  reducers: {
+    setInvitations: (state, action) => {
+      state.invitations = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Get signers cases
@@ -117,4 +152,10 @@ export const selectVaultSigners = createSelector(
   (signersState, vaultId) => signersState.signers_map[vaultId] || []
 );
 
-export const { reducer: signersReducer } = signersSlice;
+export const selectPendingInvitations = createSelector(
+  [selectSignersState],
+  (signersState) =>
+    signersState.invitations.filter((invite) => !invite.executed) || []
+);
+
+export const { setInvitations, reducer: signersReducer } = signersSlice;

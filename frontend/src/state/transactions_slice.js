@@ -3,7 +3,6 @@ import { container } from "@/inversify.config";
 import { TRANSACTIONS_REPOSITORY } from "@/repository/transactions";
 import { createSelector } from "reselect";
 import { toaster } from "@/components/ui/toaster";
-import { VAULTS_REPOSITORY } from "@/repository/vaults";
 import { ErrorToast } from "@/components/ui/error-toast";
 import { createElement } from "react";
 
@@ -71,7 +70,7 @@ export const createTransaction = createAsyncThunk(
 
 export const executeTransaction = createAsyncThunk(
   "transactions/execute",
-  async ({ vaultId, transactionId }, { rejectWithValue, getState }) => {
+  async ({ vaultId, transactionId }, { rejectWithValue }) => {
     try {
       if (!vaultId) {
         toaster.create({
@@ -186,7 +185,6 @@ const transactionsSlice = createSlice({
       })
       .addCase(createTransaction.fulfilled, (state, action) => {
         state.createLoading = false;
-        console.log("createTransaction fulfilled payload", action.payload);
         state.transactions_list.push(action.payload);
         state.error = null;
       })

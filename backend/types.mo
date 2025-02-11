@@ -48,15 +48,6 @@ module Types {
         executed : Bool;
     };
 
-    // Aggregated transaction type
-    public type TransactionDetails = {
-        id : Nat;
-        transaction : Transaction;
-        decisions: [(Principal, Bool)];
-        threshold : Nat;
-        required : Nat;
-    };
-
     public type User = {
         name: Text;
         principal: Principal;
@@ -78,9 +69,11 @@ module Types {
     public type Proposal = {
         id: Nat;
         action: ProposalAction;
-        confirmations: [(Principal, Bool)];
+        decisions: [(Principal, Bool)];
         executed: Bool;
-        created_at_time: Int;
+        created_at_time: ?Int;
+        threshold: Nat;
+        required: Nat;
     };
 
 }

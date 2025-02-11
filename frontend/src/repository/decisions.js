@@ -64,6 +64,7 @@ export class ICPDecisionRepository extends DecisionRepository {
 
     try {
       const transactions = await vaultActor.getTransactions();
+      const invitations = await vaultActor.getInvitations();
       const owners = await vaultActor.getOwners();
 
       // Create a decisions map for the focused vault
@@ -88,6 +89,24 @@ export class ICPDecisionRepository extends DecisionRepository {
         decisions_map[focusedVault.id][txId] = decisions;
       });
 
+      // Add invitations to the decisions map
+      invitations.forEach((invitation) => {
+        const invitationId = invitation.id.toString();
+        const confirmedOwners = new Set(
+          invitation.decisions
+            .filter(([_, isApproved]) => isApproved)
+            .map(([owner]) => owner.toString())
+        );
+
+        // Map each owner to a decision pair [userId, isApproval]
+        const decisions = owners.map((owner) => [
+          owner.toString(),
+          confirmedOwners.has(owner.toString()),
+        ]);
+
+        decisions_map[focusedVault.id][invitationId] = decisions;
+      });
+
       return decisions_map;
     } catch (error) {
       console.error("Error in getAll:", error);
@@ -95,7 +114,7 @@ export class ICPDecisionRepository extends DecisionRepository {
     }
   }
 
-  async recordDecision(vaultId, txId, decision, userId) {
+  async recordDecision(vaultId, proposalId, decision, userId) {
     const vaultActor = this.sessionRepository.VaultActor;
     if (!vaultActor) {
       throw new Error("Vault actor not initialized");
@@ -103,12 +122,12 @@ export class ICPDecisionRepository extends DecisionRepository {
 
     try {
       if (decision) {
-        // If decision is true (approval), call confirmTransaction
-        const result = await vaultActor.confirmTransaction(BigInt(txId));
+        // If decision is true (approval), call confirm on the proposal
+        const result = await vaultActor.confirm(BigInt(proposalId));
 
         if (result.err) {
           throw {
-            message: result.err.message || "Failed to confirm transaction",
+            message: result.err.message || "Failed to confirm proposal",
             code: result.err.code,
             isApiError: true,
           };
@@ -119,7 +138,7 @@ export class ICPDecisionRepository extends DecisionRepository {
 
       // Return updated transaction details
       const updatedDetails = await vaultActor.getTransactionDetails(
-        BigInt(txId)
+        BigInt(proposalId)
       );
       if (updatedDetails.err) {
         throw {

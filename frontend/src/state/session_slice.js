@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { container } from "@/inversify.config";
 import { SESSION_REPOSITORY } from "@/repository/session";
-import { Principal } from "@dfinity/principal";
 import { toaster } from "@/components/ui/toaster";
 
 const initialState = {

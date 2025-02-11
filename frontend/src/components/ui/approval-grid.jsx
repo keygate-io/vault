@@ -13,7 +13,7 @@ import { selectVaultSigners } from "../../state/signers_slice";
 import { GlobalSettings } from "@/constants/global_config";
 import { useEffect } from "react";
 
-export function ApprovalGrid({ txId, ...props }) {
+export function ApprovalGrid({ proposalId, ...props }) {
   const dispatch = useDispatch();
   const approvedBg = useColorModeValue("black", "white");
   const unapprovedBg = useColorModeValue("gray.100", "whiteAlpha.200");
@@ -21,7 +21,7 @@ export function ApprovalGrid({ txId, ...props }) {
   const currentVaultId = useSelector((state) => selectCurrentVaultId(state));
   const currentVault = useSelector((state) => selectCurrentVault(state));
   const approvals = useSelector((state) =>
-    selectApprovalsCount(state, currentVaultId, txId)
+    selectApprovalsCount(state, currentVaultId, proposalId)
   );
   const threshold = useSelector((state) =>
     selectVaultThreshold(state, currentVaultId)
@@ -31,10 +31,10 @@ export function ApprovalGrid({ txId, ...props }) {
   );
 
   useEffect(() => {
-    if (currentVault && txId) {
+    if (currentVault) {
       dispatch(fetchDecisions());
     }
-  }, [currentVault, txId, dispatch]);
+  }, [currentVault, proposalId, dispatch]);
 
   const BOX_WIDTH = 16; // px
   const BOX_SPACING = 8.25; // px, equivalent to spacing={1} in HStack
@@ -43,7 +43,7 @@ export function ApprovalGrid({ txId, ...props }) {
   const elements = [];
   signers.forEach((signer, index) => {
     elements.push(
-      <Tooltip key={signer.toString()} content={`${signer.name}'s Approval`}>
+      <Tooltip key={signer.id} content={`${signer.name}'s Approval`}>
         <Box
           w="16px"
           h="16px"
@@ -85,13 +85,7 @@ export function ApprovalGrid({ txId, ...props }) {
   });
 
   return (
-    <VStack
-      align="flex-end"
-      spacing={1}
-      position="relative"
-      {...props}
-      mb="24px"
-    >
+    <VStack align="flex-end" spacing={1} position="relative" {...props}>
       <Text
         visibility={GlobalSettings["dev_mode"].enabled ? "visible" : "hidden"}
       >
@@ -110,7 +104,8 @@ export function ApprovalGrid({ txId, ...props }) {
 }
 
 ApprovalGrid.propTypes = {
-  txId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  proposalId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    .isRequired,
 };
 
 export default ApprovalGrid;

@@ -6,10 +6,12 @@ export const idlFactory = ({ IDL }) => {
   });
   const Proposal = IDL.Record({
     'id' : IDL.Nat,
-    'confirmations' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
     'action' : ProposalAction,
+    'threshold' : IDL.Nat,
+    'decisions' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
+    'required' : IDL.Nat,
     'executed' : IDL.Bool,
-    'created_at_time' : IDL.Int,
+    'created_at_time' : IDL.Opt(IDL.Int),
   });
   const ApiError = IDL.Record({
     'code' : IDL.Nat,
@@ -17,32 +19,16 @@ export const idlFactory = ({ IDL }) => {
     'details' : IDL.Opt(IDL.Text),
   });
   const Result = IDL.Variant({ 'ok' : Proposal, 'err' : ApiError });
-  const Transaction = IDL.Record({
-    'id' : IDL.Nat,
-    'to' : IDL.Principal,
-    'executed' : IDL.Bool,
-    'created_at_time' : IDL.Opt(IDL.Int),
-    'amount' : Tokens,
-  });
-  const TransactionDetails = IDL.Record({
-    'id' : IDL.Nat,
-    'threshold' : IDL.Nat,
-    'transaction' : Transaction,
-    'decisions' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
-    'required' : IDL.Nat,
-  });
-  const Result_1 = IDL.Variant({ 'ok' : TransactionDetails, 'err' : ApiError });
   const Vault = IDL.Service({
     'confirm' : IDL.Func([IDL.Nat], [Result], []),
-    'execute' : IDL.Func([IDL.Nat], [Result_1], []),
+    'execute' : IDL.Func([IDL.Nat], [Result], []),
     'executeProposal' : IDL.Func([IDL.Nat], [Result], []),
+    'getInvitations' : IDL.Func([], [IDL.Vec(Proposal)], ['query']),
     'getOwners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
-    'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_1], ['query']),
-    'getTransactions' : IDL.Func([], [IDL.Vec(TransactionDetails)], ['query']),
-    'invite' : IDL.Func([IDL.Principal], [Result], []),
+    'getTransactionDetails' : IDL.Func([IDL.Nat], [Result], ['query']),
+    'getTransactions' : IDL.Func([], [IDL.Vec(Proposal)], ['query']),
     'isConfirmed' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
     'propose' : IDL.Func([ProposalAction], [Result], []),
-    'proposeTransaction' : IDL.Func([IDL.Principal, IDL.Nat], [Result], []),
   });
   return Vault;
 };

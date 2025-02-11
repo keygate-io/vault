@@ -6,6 +6,7 @@ import { decisionsReducer } from "@/state/decisions_slice";
 import { sessionReducer } from "@/state/session_slice";
 import { usersReducer } from "@/state/users_slice";
 import { transactionsReducer } from "@/state/transactions_slice";
+import { invitationsReducer } from "@/state/invitations_slice";
 import { combineReducers } from "redux";
 
 const rootReducer = combineReducers({
@@ -16,6 +17,7 @@ const rootReducer = combineReducers({
   config: configReducer,
   session: sessionReducer,
   users: usersReducer,
+  invitations: invitationsReducer,
 });
 
 const store = configureStore({

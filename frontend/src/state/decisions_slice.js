@@ -47,7 +47,7 @@ export const recordDecision = createAsyncThunk(
       }
 
       // Check if user has already approved
-      const hasApproved = hasUserApprovedThisTxId(
+      const hasApproved = hasUserApprovedThisProposal(
         state,
         vaultId,
         transactionId,
@@ -177,7 +177,7 @@ export const selectRejectionsCount = createSelector(
   (decisions) => decisions.filter((decision) => decision[1] === false).length
 );
 
-export const hasUserApprovedThisTxId = createSelector(
+export const hasUserApprovedThisProposal = createSelector(
   [selectDecisionsForTx, (_, __, ___, userId) => userId],
   (decisions, userId) => {
     if (!userId) return false;

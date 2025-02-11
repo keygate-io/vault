@@ -8,6 +8,10 @@ import {
   DECISIONS_REPOSITORY,
   ICPDecisionRepository,
 } from "@/repository/decisions";
+import {
+  INVITATIONS_REPOSITORY,
+  ICPInvitationRepository,
+} from "@/repository/invitations";
 
 const container = new Container();
 container.bind(SIGNER_REPOSITORY).to(ICPSignerRepository).inSingletonScope();
@@ -21,6 +25,10 @@ container.bind(USER_REPOSITORY).to(ICPUserRepository).inSingletonScope();
 container
   .bind(DECISIONS_REPOSITORY)
   .to(ICPDecisionRepository)
+  .inSingletonScope();
+container
+  .bind(INVITATIONS_REPOSITORY)
+  .to(ICPInvitationRepository)
   .inSingletonScope();
 
 export { container };

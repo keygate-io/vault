@@ -114,17 +114,18 @@ export class ICPSessionRepository extends ISessionRepository {
 
     try {
       const result = await this.ManagerActor.getOrCreateUser();
-      console.log("User result obtained:", result);
-      
+
       // Check if result contains an error
       if (result.err) {
         throw {
           message: result.err || "Failed to get current user",
-          isApiError: true
+          isApiError: true,
         };
       }
 
       const user = result.ok;
+
+      console.log("Successfully obtained current user profile");
       return {
         id: user.principal.toString(),
         name: user.name,
@@ -144,13 +145,14 @@ export class ICPSessionRepository extends ISessionRepository {
     }
 
     try {
-      console.log('Starting session initialization...');
       this.AuthenticatedAgent = agent;
 
       await this.fetchRootKey();
 
       if (!GlobalSettings.session.icp.manager_canister_id) {
-        throw new SessionInitializationError('Manager canister ID is not configured');
+        throw new SessionInitializationError(
+          "Manager canister ID is not configured"
+        );
       }
 
       this.ManagerActor = Actor.createActor(ManagerIDLFactory, {
@@ -158,20 +160,24 @@ export class ICPSessionRepository extends ISessionRepository {
         agent: this.AuthenticatedAgent,
       });
 
-
       const user = await this.getCurrentUser();
-      
+
+      console.log("Successfully initialized session");
+
       return { user };
     } catch (error) {
       // Clean up resources if initialization fails
       this.AuthenticatedAgent = null;
       this.ManagerActor = null;
-      
+
       if (error instanceof SessionInitializationError) {
         throw error;
       }
 
-      throw new SessionInitializationError('Failed to initialize session', error);
+      throw new SessionInitializationError(
+        "Failed to initialize session",
+        error
+      );
     }
   }
 

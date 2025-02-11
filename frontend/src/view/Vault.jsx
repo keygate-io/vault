@@ -20,8 +20,10 @@ import {
   selectBalanceError,
 } from "@/state/vaults_slice";
 import { fetchSignersForVault } from "@/state/signers_slice";
-import { focus } from "@/state/session_slice";
+import { focus, selectIsAuthenticated } from "@/state/session_slice";
 import { ReceiveModal } from "@/components/ui/receive-modal";
+import { SESSION_REPOSITORY } from "@/repository/session";
+import { container } from "@/inversify.config";
 
 function Vault() {
   const { vaultId } = useParams();
@@ -35,6 +37,7 @@ function Vault() {
   const createTransactionRef = useRef(null);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   useEffect(() => {
     if (!isLoading && !isCreating && !vault) {
@@ -52,10 +55,10 @@ function Vault() {
   }, [vault, vaultId, dispatch, isCreating, isLoading, navigate]);
 
   useEffect(() => {
-    if (vault && !isCreating) {
+    if (vault && !isCreating && isAuthenticated) {
       dispatch(fetchSignersForVault(vault.id));
     }
-  }, [vault, isCreating]);
+  }, [vault, isCreating, isAuthenticated]);
 
   const handleCollapsibleOpen = () => {
     setIsCollapsibleOpen(true);

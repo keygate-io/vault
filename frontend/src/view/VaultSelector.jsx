@@ -37,10 +37,6 @@ function VaultSelector() {
   const iconColor = useColorModeValue("gray.600", "gray.300");
   const [vaultName, setVaultName] = useState("");
 
-  useEffect(() => {
-    dispatch(fetchVaults());
-  }, [dispatch]);
-
   const handleCreateVault = async (onClose) => {
     if (!vaultName.trim()) return;
 

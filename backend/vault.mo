@@ -41,7 +41,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                 let tx : Types.Transaction = {
                     id = proposalCount;
                     amount = amount;
-                    to = to;
+                    to = { owner = to; subaccount = null };
                     created_at_time = ?Time.now();
                     executed = false;
                 };
@@ -57,9 +57,11 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         let proposal : Types.Proposal = {
             id = proposalCount;
             action = action;
-            confirmations = [(caller, true)];
+            decisions = [(caller, true)];
             executed = false;
-            created_at_time = Time.now();
+            created_at_time = ?Time.now();
+            threshold = threshold;
+            required = threshold;
         };
 
         proposalCount += 1;
@@ -86,7 +88,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                 })
             };
             case (?proposal) {
-                let alreadyConfirmed = Array.find(proposal.confirmations, func((p, confirmed) : (Principal, Bool)) : Bool {
+                let alreadyConfirmed = Array.find(proposal.decisions, func((p, confirmed) : (Principal, Bool)) : Bool {
                     Principal.equal(p, caller) and confirmed
                 });
 
@@ -98,15 +100,15 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                     })
                 };
 
-                let newConfirmations = Array.append(proposal.confirmations, [(caller, true)]);
-                let updatedProposal = { proposal with confirmations = newConfirmations };
+                let newDecisions = Array.append(proposal.decisions, [(caller, true)]);
+                let updatedProposal = { proposal with decisions = newDecisions };
                 Map.set(proposals, nhash, proposalId, updatedProposal);
                 #ok(updatedProposal)
             }
         }
     };
 
-    public shared({ caller }) func execute(proposalId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
+    public shared({ caller }) func execute(proposalId: Nat) : async Result.Result<Types.Proposal, Types.ApiError> {
         // Check if the caller is an owner
         if (not isOwnerPrincipal(caller)) {
             return #err({
@@ -127,9 +129,9 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                 });
             };
             case (?proposal) {
-                // Validate confirmations
-                let confirmationsResult = executor.validateConfirmations(proposal, threshold);
-                switch (confirmationsResult) {
+                // Validate decisions
+                let decisionsResult = executor.validateDecisions(proposal, threshold);
+                switch (decisionsResult) {
                     case (#err(e)) { return #err(e) };
                     case (#ok(_)) {
                         // Execute based on proposal type
@@ -138,8 +140,8 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                                 let tx : Types.Transaction = {
                                     id = proposal.id;
                                     amount = amount;
-                                    to = to;
-                                    created_at_time = ?proposal.created_at_time;
+                                    to = { owner = to; subaccount = null };
+                                    created_at_time = proposal.created_at_time;
                                     executed = false;
                                 };
                                 
@@ -151,18 +153,11 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                                                 id = tx.id;
                                                 amount = { e8s = amount.e8s };
                                                 to = tx.to;
-                                                created_at_time = tx.created_at_time;
+                                                created_at_time = proposal.created_at_time;
                                                 executed = true;
                                             };
                                             Map.set(transactions, nhash, tx.id, updatedTransaction);
-                                            
-                                            #ok({
-                                                id = proposalId;
-                                                transaction = updatedTransaction;
-                                                decisions = proposal.confirmations;
-                                                threshold = threshold;
-                                                required = threshold;
-                                            })
+                                            #ok(executedProposal)
                                         };
                                         case (#err(e)) { #err(e) };
                                     };
@@ -178,22 +173,19 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                                 let result = executor.executeInvite(proposal, principalId, proposals, invitations);
                                 switch (result) {
                                     case (#ok(executedProposal)) {
+                                        // Add the new owner to both owners array and isOwner mapping
+                                        owners := Array.append(owners, [principalId]);
+                                        isOwner := Array.append(isOwner, [(principalId, true)]);
+                                        
                                         let tx : Types.Transaction = {
                                             id = proposal.id;
                                             amount = { e8s = 0 : Nat64 };
-                                            to = principalId;
-                                            created_at_time = ?proposal.created_at_time;
+                                            to = { owner = principalId; subaccount = null };
+                                            created_at_time = proposal.created_at_time;
                                             executed = true;
                                         };
                                         Map.set(transactions, nhash, proposal.id, tx);
-                                        
-                                        #ok({
-                                            id = proposalId;
-                                            transaction = tx;
-                                            decisions = proposal.confirmations;
-                                            threshold = threshold;
-                                            required = threshold;
-                                        })
+                                        #ok(executedProposal)
                                     };
                                     case (#err(e)) { #err(e) };
                                 };
@@ -204,23 +196,7 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
             };
         }
     };
-
-    // Owner Management
-    public shared({ caller }) func proposeTransaction(to: Principal, amount: Nat) : async Result.Result<Types.Proposal, Types.ApiError> {
-        let action : Types.ProposalAction = #Transaction({
-            to = to;
-            amount = { 
-                e8s = Nat64.fromNat(amount)
-            };
-        });
-        await propose(action)
-    };
-
-    public shared({ caller }) func invite(principalId: Principal) : async Result.Result<Types.Proposal, Types.ApiError> {
-        let action : Types.ProposalAction = #Invite(principalId);
-        await propose(action)
-    };
-
+    
     // Helper function to check if a principal is an owner
     private func isOwnerPrincipal(p: Principal) : Bool {
         Debug.print("isOwnerPrincipal: " # debug_show(p));
@@ -235,34 +211,17 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
     };
 
     // Utility & Queries
-    public query func getTransactionDetails(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
-        switch (Map.get(decisions, nhash, txId)) {
+    public query func getTransactionDetails(txId: Nat) : async Result.Result<Types.Proposal, Types.ApiError> {
+        switch (Map.get(proposals, nhash, txId)) {
             case null {
                 #err({
                     code = 404;
-                    message = "Transaction not found";
-                    details = ?("No transaction exists with ID: " # Nat.toText(txId));
+                    message = "Proposal not found";
+                    details = ?("No proposal exists with ID: " # Nat.toText(txId));
                 })
             };
-            case (?decisions) {
-                switch (Map.get(transactions, nhash, txId)) {
-                    case null { 
-                        #err({
-                            code = 500;
-                            message = "Data inconsistency error";
-                            details = ?("Transaction exists but data is missing");
-                        }) 
-                    };
-                    case (?transaction) {
-                        #ok({
-                            id = txId;
-                            transaction = transaction;
-                            decisions = decisions;
-                            threshold = threshold;
-                            required = threshold;
-                        })
-                    };
-                }
+            case (?proposal) {
+                #ok(proposal)
             }
         }
     };
@@ -275,25 +234,35 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         owners
     };
 
-    public shared query func getTransactions() : async [Types.TransactionDetails] {
-        let txEntries = Map.toArray(transactions);
-        Array.map<(Nat, Types.Transaction), Types.TransactionDetails>(
-            txEntries,
-            func((txId, transaction)) {
-                let decisions_query = Map.get(decisions, nhash, txId);
-                let decisions_array : [(Principal, Bool)] = switch(decisions_query) {
-                    case null { [] };
-                    case (?d) { d };
-                };
-
-                {
-                    id = txId;
-                    transaction = transaction;
-                    decisions = decisions_array;
-                    threshold = threshold;
-                    required = threshold;
+    public shared query func getTransactions() : async [Types.Proposal] {
+        let proposalEntries = Map.toArray(proposals);
+        Array.map<(Nat, Types.Proposal), Types.Proposal>(
+            Array.filter<(Nat, Types.Proposal)>(
+                proposalEntries,
+                func((_, proposal)) {
+                    switch (proposal.action) {
+                        case (#Transaction(_)) { true };
+                        case (_) { false };
+                    }
                 }
-            }
+            ),
+            func((_, proposal)) { proposal }
+        )
+    };
+
+    public shared query func getInvitations() : async [Types.Proposal] {
+        let proposalEntries = Map.toArray(proposals);
+        Array.map<(Nat, Types.Proposal), Types.Proposal>(
+            Array.filter<(Nat, Types.Proposal)>(
+                proposalEntries,
+                func((_, proposal)) {
+                    switch (proposal.action) {
+                        case (#Invite(_)) { true };
+                        case (_) { false };
+                    }
+                }
+            ),
+            func((_, proposal)) { proposal }
         )
     };
 
@@ -302,25 +271,43 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         switch (validationResult) {
             case (#err(e)) { return #err(e) };
             case (#ok(proposal)) {
-                // Validate confirmations
-                let confirmationsResult = executor.validateConfirmations(proposal, threshold);
-                switch (confirmationsResult) {
+                // Validate decisions
+                let decisionsResult = executor.validateDecisions(proposal, threshold);
+                switch (decisionsResult) {
                     case (#err(e)) { return #err(e) };
                     case (#ok(_)) {
                         // Execute based on proposal type
                         switch (proposal.action) {
                             case (#Transaction({ amount; to })) { 
-                                let tx = {
+                                let tx : Types.Transaction = {
                                     id = proposal.id;
                                     amount = amount;
-                                    to = to;
-                                    created_at_time = ?proposal.created_at_time;
+                                    to = { owner = to; subaccount = null };
+                                    created_at_time = proposal.created_at_time;
                                     executed = false;
                                 };
                                 await executor.executeTransaction(proposal, tx, proposals)
                             };
                             case (#Invite(principalId)) { 
-                                executor.executeInvite(proposal, principalId, proposals, invitations)
+                                let result = executor.executeInvite(proposal, principalId, proposals, invitations);
+                                switch (result) {
+                                    case (#ok(executedProposal)) {
+                                        // Add the new owner to both owners array and isOwner mapping
+                                        owners := Array.append(owners, [principalId]);
+                                        isOwner := Array.append(isOwner, [(principalId, true)]);
+                                        
+                                        let tx : Types.Transaction = {
+                                            id = proposal.id;
+                                            amount = { e8s = 0 : Nat64 };
+                                            to = { owner = principalId; subaccount = null };
+                                            created_at_time = proposal.created_at_time;
+                                            executed = true;
+                                        };
+                                        Map.set(transactions, nhash, proposal.id, tx);
+                                        #ok(executedProposal)
+                                    };
+                                    case (#err(e)) { #err(e) };
+                                }
                             };
                         }
                     };

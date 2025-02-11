@@ -26,11 +26,6 @@ export default function Header() {
         />
         <ColorModeButton />
       </HStack>
-      {principal && (
-        <Text fontSize="sm" color="gray.500">
-          Principal: {principal}
-        </Text>
-      )}
       <Feature name="demo">
         <Link
           fontSize="sm"

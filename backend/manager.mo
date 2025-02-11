@@ -93,7 +93,7 @@ shared actor class Manager() {
         switch (Map.get(users, phash, caller)) {
             case (?user) #ok(user);
             case null {
-                let result = await registerUserWithPrincipal(caller, "Unknown");
+                let result = await registerUserWithPrincipal(caller, "Alex");
                 result
             };
         }

@@ -79,23 +79,23 @@ module {
             }
         };
 
-        public func validateConfirmations(
+        public func validateDecisions(
             proposal: Types.Proposal,
             threshold: Nat
         ) : Result.Result<(), Types.ApiError> {
-            let confirmationCount = Array.foldLeft<(Principal, Bool), Nat>(
-                proposal.confirmations,
+            let decisionCount = Array.foldLeft<(Principal, Bool), Nat>(
+                proposal.decisions,
                 0,
                 func(acc, current) {
                     if (current.1) { acc + 1 } else { acc }
                 }
             );
 
-            if (confirmationCount < threshold) {
+            if (decisionCount < threshold) {
                 #err({
                     code = 400;
-                    message = "Not enough confirmations";
-                    details = ?("Got " # Nat.toText(confirmationCount) # " but need " # Nat.toText(threshold))
+                    message = "Not enough decisions";
+                    details = ?("Got " # Nat.toText(decisionCount) # " but need " # Nat.toText(threshold))
                 })
             } else {
                 #ok(())
@@ -111,7 +111,7 @@ module {
                 // Prepare transfer arguments
                 let transferArgs : Types.TransferArgs = {
                     to = {
-                        owner = transaction.to;
+                        owner = transaction.to.owner;
                         subaccount = null;
                     };
                     fee = ?10_000;
@@ -165,6 +165,41 @@ module {
                                     code = 500;
                                     message = "Transaction is a duplicate";
                                     details = ?(debug_show(detail))
+                                })
+                            };
+                            case (#BadBurn(detail)) {
+                                #err({
+                                    code = 500;
+                                    message = "Invalid burn amount";
+                                    details = ?(debug_show(detail))
+                                })
+                            };
+                            case (#CreatedInFuture(detail)) {
+                                #err({
+                                    code = 500;
+                                    message = "Transaction timestamp is in the future";
+                                    details = ?(debug_show(detail))
+                                })
+                            };
+                            case (#TemporarilyUnavailable) {
+                                #err({
+                                    code = 503;
+                                    message = "Service temporarily unavailable";
+                                    details = null;
+                                })
+                            };
+                            case (#TooOld) {
+                                #err({
+                                    code = 400;
+                                    message = "Transaction is too old";
+                                    details = null;
+                                })
+                            };
+                            case (#GenericError(detail)) {
+                                #err({
+                                    code = 500;
+                                    message = detail.message;
+                                    details = ?(debug_show(detail));
                                 })
                             };
                         }

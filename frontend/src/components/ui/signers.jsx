@@ -1,7 +1,7 @@
 import { VStack, HStack, Text, Box, Skeleton } from "@chakra-ui/react";
 import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { InformationalAvatar } from "@/components/ui/avatar/informational-avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectCurrentUserId } from "@/state/session_slice";
 import { UserGroupIcon } from "@heroicons/react/24/solid";
@@ -32,7 +32,7 @@ function LoadingSigners() {
   );
 }
 
-function AddSignerButton({ shouldAdjustPosition, onClick }) {
+function AddSignerButton({ onClick }) {
   return (
     <Box
       position="relative"
@@ -41,7 +41,7 @@ function AddSignerButton({ shouldAdjustPosition, onClick }) {
       cursor="pointer"
       display="flex"
       alignItems="center"
-      mt={shouldAdjustPosition ? "-4" : "0"}
+      mt={"-4.5"}
       onClick={onClick}
     >
       <Avatar
@@ -59,12 +59,10 @@ function AddSignerButton({ shouldAdjustPosition, onClick }) {
 }
 
 function SignersList({ signers, currentUserId, onAddClick }) {
-  const shouldAdjustPosition =
-    signers.length === 1 && signers[0].id === currentUserId;
-
   return (
     <HStack gap={3}>
       <AvatarGroup>
+        {console.log("Current user ID:", currentUserId)}
         {signers.map((signer) => (
           <InformationalAvatar
             key={signer.id}
@@ -73,13 +71,11 @@ function SignersList({ signers, currentUserId, onAddClick }) {
             src={signer.avatarUrl}
             borderWidth={2}
             isCurrentUser={signer.id === currentUserId}
+            borderStyle={"solid"}
           />
         ))}
       </AvatarGroup>
-      <AddSignerButton
-        shouldAdjustPosition={shouldAdjustPosition}
-        onClick={onAddClick}
-      />
+      <AddSignerButton onClick={onAddClick} />
     </HStack>
   );
 }
@@ -94,11 +90,6 @@ export default function Signers() {
   const isAuthenticating = useSelector(
     (state) => state.session.isAuthenticating
   );
-
-  const handleAddSigner = async (principalId) => {
-    // TODO: Implement the actual logic to add a signer
-    console.log("Adding signer with principal:", principalId);
-  };
 
   return (
     <>
@@ -133,7 +124,6 @@ export default function Signers() {
       <AddSignerModal
         isOpen={isAddSignerModalOpen}
         onClose={() => setIsAddSignerModalOpen(false)}
-        onAddSigner={handleAddSigner}
       />
     </>
   );
