@@ -35,6 +35,25 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
             return #err({ code = 403; message = "Only owners can propose actions"; details = null });
         };
 
+        // Store transaction or invitation based on action type
+        switch (action) {
+            case (#Transaction({ amount; to })) {
+                let tx : Types.Transaction = {
+                    id = proposalCount;
+                    amount = amount;
+                    to = to;
+                    created_at_time = ?Time.now();
+                    executed = false;
+                };
+                Map.set(transactions, nhash, proposalCount, tx);
+                Map.set(decisions, nhash, proposalCount, [(caller, true)]);
+            };
+            case (#Invite(principalId)) {
+                Map.set(invitations, nhash, proposalCount, principalId);
+                Map.set(decisions, nhash, proposalCount, [(caller, true)]);
+            };
+        };
+
         let proposal : Types.Proposal = {
             id = proposalCount;
             action = action;
@@ -87,74 +106,60 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
         }
     };
 
-    public shared({ caller }) func executeTransaction(txId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
+    public shared({ caller }) func execute(proposalId: Nat) : async Result.Result<Types.TransactionDetails, Types.ApiError> {
         // Check if the caller is an owner
         if (not isOwnerPrincipal(caller)) {
             return #err({
                 code = 403;
-                message = "Only owners can execute transactions";
+                message = "Only owners can execute proposals";
                 details = null
             });
         };
 
-        // Check if transaction exists
-        let txOpt = Map.get(transactions, nhash, txId);
-        switch (txOpt) {
+        // Get the proposal
+        let optProposal = Map.get(proposals, nhash, proposalId);
+        switch (optProposal) {
             case null {
                 return #err({
                     code = 404;
-                    message = "Transaction not found";
+                    message = "Proposal not found";
                     details = null
                 });
             };
-            case (?transaction) {
-                // Get confirmations
-                switch (Map.get(decisions, nhash, txId)) {
-                    case null {
-                        return #err({
-                            code = 404;
-                            message = "Transaction confirmations not found";
-                            details = null
-                        });
-                    };
-                    case (?confirmations) {
-                        // Create a proposal for the transaction
-                        let proposal : Types.Proposal = {
-                            id = transaction.id;
-                            action = #Transaction({
-                                amount = transaction.amount;
-                                to = transaction.to;
-                            });
-                            confirmations = confirmations;
-                            executed = false;
-                            created_at_time = switch (transaction.created_at_time) {
-                                case null Time.now();
-                                case (?time) time;
-                            };
-                        };
-
-                        // Validate confirmations
-                        let confirmationsResult = executor.validateConfirmations(proposal, threshold);
-                        switch (confirmationsResult) {
-                            case (#err(e)) { return #err(e) };
-                            case (#ok(_)) {
+            case (?proposal) {
+                // Validate confirmations
+                let confirmationsResult = executor.validateConfirmations(proposal, threshold);
+                switch (confirmationsResult) {
+                    case (#err(e)) { return #err(e) };
+                    case (#ok(_)) {
+                        // Execute based on proposal type
+                        switch (proposal.action) {
+                            case (#Transaction({ amount; to })) { 
+                                let tx : Types.Transaction = {
+                                    id = proposal.id;
+                                    amount = amount;
+                                    to = to;
+                                    created_at_time = ?proposal.created_at_time;
+                                    executed = false;
+                                };
+                                
                                 try {
-                                    let result = await executor.executeTransaction(proposal, transaction, proposals);
+                                    let result = await executor.executeTransaction(proposal, tx, proposals);
                                     switch (result) {
                                         case (#ok(executedProposal)) {
-                                            let updatedTransaction = {
-                                                id = transaction.id;
-                                                amount = transaction.amount;
-                                                to = transaction.to;
-                                                created_at_time = transaction.created_at_time;
+                                            let updatedTransaction : Types.Transaction = {
+                                                id = tx.id;
+                                                amount = { e8s = amount.e8s };
+                                                to = tx.to;
+                                                created_at_time = tx.created_at_time;
                                                 executed = true;
                                             };
-                                            Map.set(transactions, nhash, transaction.id, updatedTransaction);
+                                            Map.set(transactions, nhash, tx.id, updatedTransaction);
                                             
                                             #ok({
-                                                id = txId;
+                                                id = proposalId;
                                                 transaction = updatedTransaction;
-                                                decisions = confirmations;
+                                                decisions = proposal.confirmations;
                                                 threshold = threshold;
                                                 required = threshold;
                                             })
@@ -169,11 +174,35 @@ actor class Vault(initOwners : [Principal], initThreshold : Nat) = this {
                                     })
                                 };
                             };
-                        };
+                            case (#Invite(principalId)) {
+                                let result = executor.executeInvite(proposal, principalId, proposals, invitations);
+                                switch (result) {
+                                    case (#ok(executedProposal)) {
+                                        let tx : Types.Transaction = {
+                                            id = proposal.id;
+                                            amount = { e8s = 0 : Nat64 };
+                                            to = principalId;
+                                            created_at_time = ?proposal.created_at_time;
+                                            executed = true;
+                                        };
+                                        Map.set(transactions, nhash, proposal.id, tx);
+                                        
+                                        #ok({
+                                            id = proposalId;
+                                            transaction = tx;
+                                            decisions = proposal.confirmations;
+                                            threshold = threshold;
+                                            required = threshold;
+                                        })
+                                    };
+                                    case (#err(e)) { #err(e) };
+                                };
+                            };
+                        }
                     };
-                };
+                }
             };
-        };
+        }
     };
 
     // Owner Management

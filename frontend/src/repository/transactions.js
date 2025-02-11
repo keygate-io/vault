@@ -189,11 +189,12 @@ export class ICPTransactionRepository extends TransactionRepository {
 
     try {
       const transactions = await vaultActor.getTransactions();
+      console.log("transactions: ", transactions);
 
       const formattedTransactions = transactions.map((tx) => ({
         id: tx.id.toString(),
         vault_id: focusedVault.canister_id,
-        recipient: tx.transaction.to.owner.toString(),
+        recipient: tx.transaction.to.toString(),
         amount: e8sToFloat(tx.transaction.amount),
         isExecuted: tx.transaction.executed,
         isSuccessful: tx.transaction.executed,
@@ -223,10 +224,12 @@ export class ICPTransactionRepository extends TransactionRepository {
     }
 
     try {
-      const result = await vaultActor.proposeTransaction(
-        Principal.fromText(transaction.recipient),
-        transaction.amount.e8s
-      );
+      const result = await vaultActor.propose({
+        Transaction: {
+          to: Principal.fromText(transaction.recipient),
+          amount: { e8s: transaction.amount.e8s },
+        },
+      });
 
       // Check if result contains an error
       if (result.err) {
@@ -242,8 +245,8 @@ export class ICPTransactionRepository extends TransactionRepository {
       const parsedTx = {
         id: tx.id.toString(),
         vault_id: focusedVault.canister_id,
-        recipient: tx.to.owner.toString(),
-        amount: e8sToFloat(tx.amount),
+        recipient: tx.action.Transaction.to.toString(),
+        amount: e8sToFloat(tx.action.Transaction.amount),
         created_at_time: tx.created_at_time.toString(),
         isExecuted: false,
         isSuccessful: false,
@@ -263,25 +266,23 @@ export class ICPTransactionRepository extends TransactionRepository {
     }
 
     try {
-      const result = await vaultActor.executeTransaction(
-        BigInt(transaction_id)
-      );
-      
+      const result = await vaultActor.execute(BigInt(transaction_id));
+
       // Check if result contains an error
       if (result && result.err) {
         throw {
-          message: result.err.message || "Failed to execute transaction",
+          message: result.err.message || "Failed to execute proposal",
           code: result.err.code,
-          isApiError: true
+          isApiError: true,
         };
       }
 
-      console.log("Executed transaction:", result.ok);
+      console.log("Executed proposal:", result.ok);
 
       return {
         id: transaction_id,
         vault_id: vault_id,
-        recipient: result.ok.transaction.to.owner.toString(),
+        recipient: result.ok.transaction.to.toString(),
         amount: e8sToFloat(result.ok.transaction.amount),
         isExecuted: true,
         isSuccessful: true,

@@ -16,7 +16,7 @@ export const idlFactory = ({ IDL }) => {
     'message' : IDL.Text,
     'details' : IDL.Opt(IDL.Text),
   });
-  const Result_1 = IDL.Variant({ 'ok' : Proposal, 'err' : ApiError });
+  const Result = IDL.Variant({ 'ok' : Proposal, 'err' : ApiError });
   const Transaction = IDL.Record({
     'id' : IDL.Nat,
     'to' : IDL.Principal,
@@ -31,20 +31,18 @@ export const idlFactory = ({ IDL }) => {
     'decisions' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
     'required' : IDL.Nat,
   });
-  const Result_2 = IDL.Variant({ 'ok' : TransactionDetails, 'err' : ApiError });
-  const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : ApiError });
+  const Result_1 = IDL.Variant({ 'ok' : TransactionDetails, 'err' : ApiError });
   const Vault = IDL.Service({
-    'confirm' : IDL.Func([IDL.Nat], [Result_1], []),
-    'executeProposal' : IDL.Func([IDL.Nat], [Result_1], []),
-    'executeTransaction' : IDL.Func([IDL.Nat], [Result_2], []),
+    'confirm' : IDL.Func([IDL.Nat], [Result], []),
+    'execute' : IDL.Func([IDL.Nat], [Result_1], []),
+    'executeProposal' : IDL.Func([IDL.Nat], [Result], []),
     'getOwners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
-    'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_2], ['query']),
+    'getTransactionDetails' : IDL.Func([IDL.Nat], [Result_1], ['query']),
     'getTransactions' : IDL.Func([], [IDL.Vec(TransactionDetails)], ['query']),
-    'invite' : IDL.Func([IDL.Principal], [Result_1], []),
+    'invite' : IDL.Func([IDL.Principal], [Result], []),
     'isConfirmed' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
-    'propose' : IDL.Func([ProposalAction], [Result_1], []),
-    'proposeTransaction' : IDL.Func([IDL.Principal, IDL.Nat], [Result_1], []),
-    'removeOwner' : IDL.Func([IDL.Principal], [Result], []),
+    'propose' : IDL.Func([ProposalAction], [Result], []),
+    'proposeTransaction' : IDL.Func([IDL.Principal, IDL.Nat], [Result], []),
   });
   return Vault;
 };

@@ -43,8 +43,8 @@ module Types {
     public type Transaction = {
         id : Nat;
         amount : Tokens;
-        to : Principal;
-        created_at_time : ?Int;
+        to : Account;
+        created_at_time : ?Time.Time;
         executed : Bool;
     };
 

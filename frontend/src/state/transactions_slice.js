@@ -70,7 +70,7 @@ export const createTransaction = createAsyncThunk(
 );
 
 export const executeTransaction = createAsyncThunk(
-  "transactions/executeTransaction",
+  "transactions/execute",
   async ({ vaultId, transactionId }, { rejectWithValue, getState }) => {
     try {
       if (!vaultId) {
@@ -78,16 +78,14 @@ export const executeTransaction = createAsyncThunk(
           description: "Missing vault ID",
           type: "error",
         });
-        return rejectWithValue("executeTransaction missing param vaultId");
+        return rejectWithValue("execute missing param vaultId");
       }
       if (!transactionId) {
         toaster.create({
           description: "Missing transaction ID",
           type: "error",
         });
-        return rejectWithValue(
-          "executeTransaction missing param transactionId"
-        );
+        return rejectWithValue("execute missing param transactionId");
       }
 
       const repository = container.get(TRANSACTIONS_REPOSITORY);
@@ -96,19 +94,19 @@ export const executeTransaction = createAsyncThunk(
         transactionId
       );
       toaster.create({
-        description: "Transaction executed! View in Executed tab.",
+        description: "Proposal executed! View in Executed tab.",
         type: "success",
       });
 
       return executedTransaction;
     } catch (error) {
-      console.error("Error in executeTransaction", error);
+      console.error("Error in execute", error);
       const userMessage =
         error.code === BigInt(500)
-          ? "Due to internal server issues, we could not process your transaction. Please contact us immediately to resolve this issue."
+          ? "Due to internal server issues, we could not process your proposal. Please contact us immediately to resolve this issue."
           : error.isApiError
           ? error.message
-          : "Failed to execute transaction";
+          : "Failed to execute proposal";
 
       const technicalDetails = JSON.stringify({
         message: error.message,
