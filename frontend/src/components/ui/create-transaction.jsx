@@ -7,28 +7,37 @@ import {
 import { ClockIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { InputGroup } from "@/components/ui/input-group";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { createTransaction } from "@/state/transactions_slice";
 import { Field } from "@/components/ui/field";
 import { isValidPrincipal } from "@/utils/cryptoAddressFormats";
 import { floatToE8s } from "@/utils/floatPrecision";
 import PropTypes from "prop-types";
+import { useParams } from "react-router-dom";
+import { selectVaultSigners } from "@/state/signers_slice";
 
 const CreateTransaction = ({ onClose, onError }) => {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [formStep, setFormStep] = useState("idle");
   const [isValidRecipient, setIsValidRecipient] = useState(true);
+  const { vaultId } = useParams();
+  const signers = useSelector((state) => selectVaultSigners(state, vaultId));
+  const isSingleSigner = signers && signers.length === 1;
 
   const dispatch = useDispatch();
 
   const deriveStepDisplayText = () => {
     if (formStep === "sending") {
-      return "Proposing transaction to decentralized vault...";
+      return isSingleSigner
+        ? "Creating transaction in decentralized vault..."
+        : "Proposing transaction to decentralized vault...";
     }
 
     if (formStep === "sent") {
-      return "Transaction proposed successfully.";
+      return isSingleSigner
+        ? "Transaction created successfully."
+        : "Transaction proposed successfully.";
     }
 
     return "";

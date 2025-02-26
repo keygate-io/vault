@@ -34,32 +34,47 @@ import {
 } from "@/state/invitations_slice";
 import InvitationItem from "@/components/ui/invitation-item";
 
-const EmptyTransactions = () => {
+const EmptyTransactions = ({ signers }) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
+  const terminologyText =
+    signers && signers.length === 1 ? "transactions" : "proposals";
+
   return (
     <Center w="full" py={12}>
       <VStack spacing={3}>
         <InboxIcon className="text-gray-400" width={32} />
         <Text fontSize="md" color={textColor}>
-          No proposals emitted yet
+          No {terminologyText} emitted yet
         </Text>
       </VStack>
     </Center>
   );
 };
 
-const EmptyFilteredTransactions = ({ filter }) => {
+EmptyTransactions.propTypes = {
+  signers: PropTypes.array,
+};
+
+const EmptyFilteredTransactions = ({ filter, signers }) => {
   const textColor = useColorModeValue("gray.600", "gray.400");
+  const terminologyText =
+    signers && signers.length === 1 ? "transactions" : "proposals";
+
   return (
     <Center w="full" py={12}>
       <VStack spacing={3}>
         <InboxIcon className="text-gray-400" width={32} />
         <Text fontSize="md" color={textColor}>
-          No {filter.value} proposals
+          No {filter.value} {terminologyText}
         </Text>
       </VStack>
     </Center>
   );
+};
+
+EmptyFilteredTransactions.propTypes = {
+  filter: PropTypes.object.isRequired,
+  signers: PropTypes.array,
 };
 
 const TransactionsList = () => {
@@ -136,7 +151,7 @@ const TransactionsList = () => {
   return (
     <VStack spacing={3} align="stretch">
       <Text fontSize="lg" fontWeight="semibold" mt={6}>
-        Proposals
+        {signers && signers.length === 1 ? "Transactions" : "Proposals"}
       </Text>
       <Separator />
       <HStack spacing={4} fontSize="sm" mt={2} mb={2} justify="space-between">
@@ -155,11 +170,11 @@ const TransactionsList = () => {
             <IconButton
               variant={"ghost"}
               onClick={() => setShowTransfers(!showTransfers)}
-              bg={showTransfers ? "gray.400" : "transparent"}
-              _hover={{ bg: showTransfers ? "gray.600" : "gray.100" }}
+              bg={showTransfers ? "blackAlpha.50" : "transparent"}
+              _hover={{ bg: "blackAlpha.100" }}
               _dark={{
-                bg: showTransfers ? "gray.800" : "transparent",
-                _hover: { bg: showTransfers ? "gray.600" : "gray.700" },
+                bg: showTransfers ? "whiteAlpha.200" : "transparent",
+                _hover: { bg: "whiteAlpha.300" },
               }}
             >
               <ArrowRightIcon width={16} height={16} color="gray.500" />
@@ -169,11 +184,11 @@ const TransactionsList = () => {
             <IconButton
               variant={"ghost"}
               onClick={() => setShowInvitations(!showInvitations)}
-              bg={showInvitations ? "gray.100" : "transparent"}
-              _hover={{ bg: showInvitations ? "gray.600" : "gray.100" }}
+              bg={showInvitations ? "blackAlpha.50" : "transparent"}
+              _hover={{ bg: "blackAlpha.100" }}
               _dark={{
-                bg: showInvitations ? "gray.800" : "transparent",
-                _hover: { bg: showInvitations ? "gray.600" : "gray.700" },
+                bg: showInvitations ? "whiteAlpha.200" : "transparent",
+                _hover: { bg: "whiteAlpha.300" },
               }}
             >
               <UserPlusIcon width={16} height={16} color="gray.500" />
@@ -183,7 +198,10 @@ const TransactionsList = () => {
       </HStack>
 
       {!filteredTransactions?.length && !filteredInvitations?.length ? (
-        <EmptyFilteredTransactions filter={selectedFilters[0]} />
+        <EmptyFilteredTransactions
+          filter={selectedFilters[0]}
+          signers={signers}
+        />
       ) : (
         <>
           {showTransfers &&

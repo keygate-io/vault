@@ -6,13 +6,14 @@ import { Feature } from "@/components/ui/feature";
 import { FiBox, FiLock, FiShield, FiDatabase } from "react-icons/fi";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
-import { BuildingLibraryIcon } from "@heroicons/react/24/solid";
+import { BuildingLibraryIcon, ArrowRightIcon } from "@heroicons/react/24/solid";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { Input, Button, ProgressCircle } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import CollapsibleButton from "@/components/ui/collapsible-button";
-
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 const icons = [FiBox, FiLock, FiShield, FiDatabase];
 
 function getRandomIcon(seed) {

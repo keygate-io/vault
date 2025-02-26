@@ -36,6 +36,11 @@ export function ApprovalGrid({ proposalId, ...props }) {
     }
   }, [currentVault, proposalId, dispatch]);
 
+  // Don't render anything if there's only one signer
+  if (signers.length === 1) {
+    return null;
+  }
+
   const BOX_WIDTH = 16; // px
   const BOX_SPACING = 8.25; // px, equivalent to spacing={1} in HStack
   const adjustedThreshold = Math.min(threshold, signers.length);
@@ -94,11 +99,6 @@ export function ApprovalGrid({ proposalId, ...props }) {
       <HStack spacing={1} position="relative">
         {elements}
       </HStack>
-      {signers.length === 1 && (
-        <Text fontSize="2xs" color={approvedBg} mt="1px">
-          You are the only signer.
-        </Text>
-      )}
     </VStack>
   );
 }

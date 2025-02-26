@@ -1,11 +1,11 @@
-import { VStack, HStack, Text, Box, Skeleton } from "@chakra-ui/react";
+import { VStack, HStack, Text, Box, Skeleton, Flex } from "@chakra-ui/react";
 import { AvatarGroup } from "@/components/ui/avatar/avatar-group";
 import { InformationalAvatar } from "@/components/ui/avatar/informational-avatar";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { selectCurrentUserId } from "@/state/session_slice";
 import { UserGroupIcon } from "@heroicons/react/24/solid";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import { selectVaultSigners } from "../../state/signers_slice";
 import { useParams } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar/avatar";
@@ -16,7 +16,7 @@ function SignersHeader() {
     <HStack alignItems="center" spacing={0} justifyContent="">
       <UserGroupIcon width={20} />
       <Text marginLeft={-1} paddingLeft={0} fontSize="lg" fontWeight="bold">
-        Signers
+        Team
       </Text>
     </HStack>
   );
@@ -80,6 +80,33 @@ function SignersList({ signers, currentUserId, onAddClick }) {
   );
 }
 
+export function ShareVaultButton({ onClick }) {
+  return (
+    <Flex
+      border="0.5px solid"
+      borderColor="gray.600"
+      borderRadius="md"
+      px={3}
+      py={2}
+      alignItems="center"
+      justifyContent="center"
+      gap={2}
+      maxW="fit-content"
+      cursor="pointer"
+      transition="all 0.2s"
+      _hover={{
+        bg: "whiteAlpha.50",
+      }}
+      onClick={onClick}
+    >
+      <UserPlusIcon width={16} height={16} />
+      <Text fontSize="sm" fontWeight="medium">
+        Invite
+      </Text>
+    </Flex>
+  );
+}
+
 export default function Signers() {
   const [isOpen] = useState(false);
   const [isAddSignerModalOpen, setIsAddSignerModalOpen] = useState(false);
@@ -90,6 +117,10 @@ export default function Signers() {
   const isAuthenticating = useSelector(
     (state) => state.session.isAuthenticating
   );
+
+  if (!isLoading && !isAuthenticating && signers.length === 1) {
+    return null;
+  }
 
   return (
     <>

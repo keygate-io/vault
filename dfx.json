@@ -44,6 +44,14 @@
       "dependencies": [
         "icp_ledger_canister"
       ]
+    },
+    "payment_ledger": {
+      "main": "backend/payment_ledger.mo",
+      "type": "motoko",
+      "specified_id": "3hbro-siaaa-aaaar-qaeaa-cai",
+      "declarations": {
+        "output": "frontend/idl/payment_ledger"
+      }
     }
   },
   "defaults": {
